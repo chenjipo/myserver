@@ -1,0 +1,182 @@
+<{include file="../public/head.html"}>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                
+                <div class="layui-form-item">
+                    <label for="" class="layui-form-label">当前角色：</label>
+                    <div class="layui-form-mid" id="display_name"></div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm" lay-submit lay-filter="close"> 折 叠 </button>
+                        <button type="button" class="layui-btn layui-btn-sm" lay-submit lay-filter="open"> 展 开 </button>
+                        <button type="button" class="layui-btn layui-btn-sm" lay-submit lay-filter="commit"> 保 存 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-card-body layui-form  my-layui-form">
+                        <table id="dataTable" lay-filter="dataTable" class="mytable"></table>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+    <script type="text/javascript">
+        layui.extend({
+            treetable: 'modules/treetable-lay/treetable'
+        }).use(['layer','tool','form','tree','table','treetable'],function () {
+            var $ = layui.jquery;
+            var layer = layui.layer;
+            var form = layui.form;
+            var tree = layui.tree;
+            var tool = layui.tool;
+            var table = layui.table;
+            var treetable = layui.treetable;
+            var role_id = tool.getQueryString('role_id');
+            //渲染
+
+            tool.ajaxGet('/admin/getRolePermisonList/?role_id='+role_id,function(result){
+                if(result.state){
+                    $('#display_name').html(result.data.info.id+'-'+result.data.info.display_name)
+                    var hasAuths = result.data.hasauths
+                    renderTreetable(hasAuths)
+                }
+            });
+            // 渲染表格
+            var treetableObj;
+            var renderTreetable = function (hasAuths) {
+                var hasAuths = hasAuths || []
+                treetableObj = treetable.render({
+                    treeColIndex: 1,          // treetable新增参数
+                    treeSpid: 0,             // treetable新增参数
+                    treeIdName: 'id',       // treetable新增参数
+                    treePidName: 'parent_id',     // treetable新增参数
+                    treeDefaultClose: true,   // treetable新增参数
+                    treeLinkage: false,
+                    elem: '#dataTable',
+                    url: "/admin/getMenuList",
+                    where: {},
+                    cols: [[ //表头
+                        {type:'checkbox'}
+                        , {field: 'display_name', title: '权限名称',templet: function(d){
+                            return d.id+'-'+d.dispaly_name
+                        }}
+                        ,{
+                            field: 'icon_name', title: '图标', width: 60, templet: function (d) {
+                                return '<i class="layui-icon ' + d.icon + '"></i>';
+                            }
+                        } 
+                        , {field: 'route', title: 'URL', width: 250}
+                        , 
+                        {field: 'type_name', title: '类型', templet: function (d) {
+                                if(d.type == 1) return '<button type="button" class="layui-btn layui-btn-primary layui-border-green layui-btn-xs">菜单</button>';
+                                if(d.type == 2) return '<button type="button" class="layui-btn layui-btn-primary layui-border-blue layui-btn-xs">权限</button>';
+                            }
+                        }
+                    ]],
+                    done: function (res, page, count) {
+                        for (let i = 0; i < res.data.length; i++) {
+                            const element = res.data[i];
+                            if(hasAuths.indexOf(element.id)!==-1){
+                                res.data[i]["LAY_CHECKED"] = true;
+                                var index = res.data[i]['LAY_TABLE_INDEX'];
+                                $('tr[data-index=' + index + '] input[type="checkbox"]').prop('checked', true);
+                                $('tr[data-index=' + index + '] input[type="checkbox"]').next().addClass('layui-form-checked');
+                            }
+                        }
+                    }
+                });
+            }
+
+            table.on('checkbox(dataTable)', function(obj){
+                var third = [];
+                var cache = table.cache['dataTable']
+                var tree = sonsTree(cache,obj.data.id)
+                for (let i = 0; i < tree.length; i++) {
+                    const element = tree[i];
+                    var index = element['LAY_TABLE_INDEX'];
+                    if(obj.checked == true){
+                        element['LAY_CHECKED'] = true
+                        $('tr[data-index=' + index + '] input[type="checkbox"]').prop('checked', true);
+                        $('tr[data-index=' + index + '] input[type="checkbox"]').next().addClass('layui-form-checked');
+                    }else{
+                        element['LAY_CHECKED'] = false
+                        $('tr[data-index=' + index + '] input[type="checkbox"]').prop('checked', false);
+                        $('tr[data-index=' + index + '] input[type="checkbox"]').next().removeClass('layui-form-checked');
+                    }
+                }
+            });
+
+            //子孙树，从顶级往下找到是有的子子孙孙
+            function sonsTree(arr,id){
+                var temp = [],lev=0;
+                var forFn = function(arr, id,lev){
+                    for (var i = 0; i < arr.length; i++) {
+                        var item = arr[i];
+                        if (item.parent_id==id) {
+                            item.lev=lev;
+                            temp.push(item);
+                            forFn(arr,item.id,lev+1);
+                        }
+                    }
+                };
+                forFn(arr, id,lev);
+                return temp;
+            }
+
+            form.on('submit(close)',function(data){
+                treetable.foldAll($('#dataTable'))
+            })
+
+            form.on('submit(open)',function(data){
+                treetable.expandAll($('#dataTable'))
+            })
+            
+            //监听提交
+            form.on('submit(commit)', function(data){
+                var checkStatus = table.checkStatus('dataTable')
+                ,data = checkStatus.data;
+                var auths = [];
+                for (let i = 0; i < data.length; i++) {
+                    const element = data[i];
+                    auths.push(element.id)
+                }
+                var permission = JSON.stringify(auths)
+                tool.ajaxPost('/admin/addRolePermission',{role_id:role_id,permission:permission},function(re){
+                    // console.log(re);
+                    layer.open({
+                        type: 1,
+                        title: false,
+                        closeBtn: 0,
+                        shadeClose: true,
+                        content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                        time: 2000,
+                        end:function(){
+                            if(re.state == true){
+                                closeLayer()
+                                parent.window.location.reload();
+                            }
+                        }
+                    });
+                });
+                return false;
+            });
+
+            $('#closeBtn').on('click',function(){
+                var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+                parent.layer.close(index); //再执行关闭
+            });
+
+            function closeLayer(){
+                var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+                parent.layer.close(index); //再执行关闭
+            }
+            
+        })
+    </script>
+
+

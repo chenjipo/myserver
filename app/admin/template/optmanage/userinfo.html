@@ -1,0 +1,120 @@
+<{include file="../public/head.html"}>
+<div class="layui-fluid">
+   <div class="layui-card-body layui-form  my-layui-form">
+        <table class="layui-table" id="my-table" lay-filter="filter-table">
+        </table>
+    </div>
+</div>
+<script>
+
+ layui.use(['index','table','tool'], function(){
+    var table = layui.table;
+    var tool = layui.tool;
+    var uid = tool.getQueryString('uid') || '';
+    
+    var getUserInfo = function(uid){
+        table.render({
+            elem: '#my-table'
+            ,size: 'sm'
+            ,url:'/optManage/getUserInfo/?uid='+uid
+            ,cellMinWidth: 80
+            ,height: 'full'
+            ,cols: [[
+                {field:'key',  title: '属性',width:'20%'}
+                ,{field:'value',  title: '值',width:'80%'}
+            ]]
+            ,parseData: function(res){
+                // for(var i=0;i<list.length;i++){
+                    
+                // }
+                return {
+                    "code": 0,
+                    'msg': "获取数据成功！",
+                    "count": 1000,
+                    "data": res.data
+                }
+            }
+        });
+    }
+    getUserInfo(uid)
+
+    //监听单元格事件
+    table.on('tool(filter-table)', function(obj){
+        var data = obj.data;
+        var uid = data.uid
+        if(obj.event === 'unbind_phone'){
+            layer.confirm('确定解绑uid为'+uid+'的手机号吗', {
+                btn: ['确定','取消']
+            }, function(){
+                tool.ajaxPost('/optManage/unBindPhone',{uid:uid},function(re){
+                    layer.msg(re.msg);
+                },'json');
+                obj.update({
+                    value: '-'
+                });
+            }, function(){
+
+            });
+        }
+        if(obj.event === 'banuser'){
+            if(data.value.search('正常')<0){
+                text = '解封';
+                layer.confirm('确定解封用户', {
+                    btn: ['解封','取消']
+                }, function(){
+                    tool.ajaxPost('/optManage/bandUser',{uid:uid,status:1},function(re){
+                        if(re.state){
+                            layer.alert(text+'成功！', {
+                                skin: 'layui-layer-molv' //样式类名
+                                ,closeBtn: 1
+                            });
+                        }else{
+                            layer.msg(re.msg);
+                        }
+                    },'json');
+                    obj.update({
+                        value: '<span style="color:green">正常</span>&nbsp;<button class="layui-btn layui-btn-normal layui-btn-xs" lay-event="banuser">封禁</button>'
+                    });
+                }, function(){
+
+                });
+            }else{
+                text = '封号';
+                layer.confirm('确定封禁的用户', {
+                    btn: ['关联封号','封本号','取消']
+                }, function(){
+                    tool.ajaxPost('/optManage/bandUser',{uid:uid,status:0,match:1},function(re){
+                        if(re.state){
+                            layer.alert('成功！', {
+                                skin: 'layui-layer-molv' //样式类名
+                                ,closeBtn: 1
+                            });
+                        }else{
+                            layer.msg(re.msg);
+                        }
+                    },'json');
+                    obj.update({
+                        value: '<span style="color:red">已封禁</span>&nbsp;<button class="layui-btn layui-btn-normal layui-btn-xs" lay-event="banuser">解封</button>'
+                    });
+                }, function(){
+                    tool.ajaxPost('/optManage/bandUser',{uid:uid,status:0},function(re){
+                        if(re.state){
+                            layer.alert('成功！', {
+                                skin: 'layui-layer-molv' //样式类名
+                                ,closeBtn: 1
+                            });
+                        }else{
+                            layer.msg(re.msg);
+                        }
+                    },'json');
+                    obj.update({
+                        value: '<span style="color:red">已封禁</span>&nbsp;<button class="layui-btn layui-btn-normal layui-btn-xs" lay-event="banuser">解封</button>'
+                    });
+                });
+            }
+
+           
+        }
+    });
+ });
+</script>

@@ -1,0 +1,124 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-item .layui-input-inline {width: 160px;}
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline layui-btn-group">
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-normal js-add">确认无误提交</button>
+                </div>
+            </div>
+
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['index','tool', 'form','table'], function(){
+        var $ = layui.$;
+        var form = layui.form;
+        var table = layui.table;
+        var tool = layui.tool;
+        var id = tool.getQueryString('gid') || '';
+
+        var colors = {
+            1:'#fff',
+            2:'#7ecbf9',
+            3:'#34bb34',
+            4:'#fff',
+            5:'#fff',
+            6:'#fff',
+            7:'#fff',
+            8:'#fff',
+            9:'#fff',
+            10:'#fff',
+        }
+
+        table.render({
+            elem: '#my-table'
+            ,size: 'sm'
+            ,url:'/platform/getGamePaywayList?gid='+id
+            ,cols: [[
+                {field:'paid', title: 'paid',width:100}
+                ,{field:'pname', title: '金流渠道名称',width:200}
+                ,{field:'paytype_txt', title: '渠道类型',width:100}
+                ,{field:'rate',  title: '单位%，点击下方分配概率，同支付方式下的渠道之和为100。0代表不支持此渠道。',edit:'text'}
+            ]]
+            ,parseData: function(res){
+                var list = res.data.list;
+                if(list != undefined && list.length>0){
+                    // for(var i=0;i<list.length;i++){
+                    // }
+                }
+                return {
+                    "code": 0,
+                    'msg': "获取数据成功！",
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            }
+            ,done: function(res, curr, count){
+                data = res.data;
+                if(data.length){
+                    for(var i=0;i<data.length;i++){
+                        var backgroundColor = colors[data[i]['paytype']]
+                        $('.layui-table-body table tr[data-index='+i+']').css('backgroundColor',backgroundColor);
+                    }
+                }
+            }
+        });
+
+        $('.js-add').click(function(){
+            var config = []
+            var cache = table['cache']['my-table']
+            cache.forEach(element => {
+                config.push({paid:element.paid,paytype:element.paytype,rate:element.rate || 0})
+            });
+            config = JSON.stringify(config)
+            tool.ajaxPost('/platform/addGamePaywayAction',{gid:id,config:config},function(re){
+                layer.open({
+                    type: 1,
+                    title: false,
+                    closeBtn: 0,
+                    shadeClose: true,
+                    content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                    time: 2000,
+                    end:function(){
+                        // if(re.state == true){
+                        //     window.location.reload();
+                        // }
+                    }
+                });
+            },'json');
+        })
+
+       //监听单元格编辑
+        // table.on('edit(filter-table)', function(obj){
+        //     var value = obj.value //得到修改后的值
+        //     ,data = obj.data //得到所在行所有键值
+        //     ,field = obj.field; //得到字段
+
+        //     tool.ajaxPost('/platform/updateGameDivideAction',data,function(re){
+        //         // console.log(re);
+        //         layer.open({
+        //             type: 1,
+        //             title: false,
+        //             closeBtn: 0,
+        //             shadeClose: true,
+        //             content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+        //             time: 2000,
+        //             end:function(){
+        //                 // if(re.state == true){
+        //                 //     window.location.reload();
+        //                 // }
+        //             }
+        //         });
+        //     },'json');
+        // });
+    });
+</script>
+<{include file="../public/foot.html"}>

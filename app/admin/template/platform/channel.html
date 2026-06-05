@@ -1,0 +1,139 @@
+<{include file="../public/head.html"}>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="cid" value="" placeholder="cid">
+                    </div>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="cname" value="" placeholder="渠道名称">
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 筛 选 </button>
+                    <button type="submit" class="layui-btn layui-btn-sm layui-btn-normal js-add"> 添 加 </button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+                    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['tool','table'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var table = layui.table;
+    var tool = layui.tool;
+
+    table.render({
+        elem: '#my-table'
+        ,size: 'sm'
+        ,url:'/platform/getChannelList'
+        ,cols: [[
+            {field:'cid', title: '渠道ID'}
+            ,{field:'cname', title: '渠道名称'}
+            ,{field:'slug', title: '渠道简称'}
+            ,{field:'sort', title: '排序'}
+            ,{field:'atime',  title: '创建时间'}
+            ,{field:'mtime', title: '修改时间'}
+            ,{title:'操作', align:'center', toolbar: '#my-operate'}
+        ]]
+        ,page: {
+            layout: ['prev', 'page', 'next', 'skip' ,'count']
+            ,limit:20
+        }
+        ,parseData: function(res){
+            var list = res.data.list;
+            if(list != undefined && list.length>0){
+                for(var i=0;i<list.length;i++){
+                    list[i].atime =  tool.toDateString(list[i].atime);
+                }
+            }
+            return {
+                "code": 0,
+                'msg': "获取数据成功！",
+                "count": res.data.total,
+                "data": res.data.list
+            }
+        }
+        ,done: function(res, curr, count){
+
+        }
+    });
+
+    //监听搜索
+    form.on('submit(filter-search)', function(data){
+        var field = data.field;
+        //执行重载
+        table.reload('my-table', {
+            where: field
+        });
+    });
+
+    //监听工具条
+    table.on('tool(filter-table)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'del'){
+            return layer.msg('暂不支持删除！')
+            layer.confirm('真的删除么', function(index){
+                del(data);
+                obj.del();
+                layer.close(index);
+            });
+        } else if(obj.event === 'edit'){
+            add(data);
+        } 
+    });
+
+    // 添加APP按钮
+    $(".js-add").click(function(){
+        add();
+    })
+
+    function add(edit){
+        var api = "/platform/addChannelPage";
+        var txt = "添加";
+        if(edit){
+            api += "?cid="+edit.cid;
+            txt = "编辑"
+        }
+        var index = layui.layer.open({
+            title: txt,
+            type: 2,
+            area: ["1px", "1px"],
+            content: api
+        })
+        layui.layer.full(index);
+        $(window).on("resize",function(){
+            layui.layer.full(index);
+        })
+    }
+
+    function del(data){
+        // console.log(data);
+        var cid = data.cid;
+        tool.ajaxPost('/platform/deleteChannelAction',{'cid':cid},function(re){
+            // console.log(re)
+            layer.open({
+                type: 1,
+                title:false,
+                closeBtn: 0,
+                shadeClose: true,
+                content:'<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time:1000,
+            });
+        },'json');
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

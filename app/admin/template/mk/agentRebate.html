@@ -1,0 +1,221 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-item .layui-input-inline {width: 160px;}
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select name="cid" lay-search="" lay-filter="cid">
+                            <option value="">选择渠道</option>
+                        </select>
+                    </div>
+
+                    <div class="layui-input-inline">
+                        <select name="agtid" lay-search="" lay-filter="agtid">
+                            <option value="">选择代理</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 筛 选 </button>
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-normal js-add"> 添 加 </button>
+                </div>
+            </div>
+
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+                    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<form class="layui-form" style="display:none;width:90%;margin-top:20px;" lay-filter="filter-form" id="add-form">
+    <div class="layui-form-item">
+        <label class="layui-form-label">选择渠道</label>
+        <div class="layui-input-block">
+            <select name="cid" lay-search="" lay-filter="cid">
+                <option value="">选择渠道</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">选择代理</label>
+        <div class="layui-input-block">
+            <select name="agtid" lay-search="" lay-filter="agtid">
+                <option value="">选择代理</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">返点百分比</label>
+        <div class="layui-input-block">
+            <input type="hidden" name="id" class="layui-input" placeholder="" value="" />
+            <input type="text" name="rebate" class="layui-input" placeholder="" />
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['index','tool', 'table'], function(){
+        var $ = layui.$;
+        var form = layui.form;
+        var table = layui.table;
+        var tool = layui.tool;
+
+        var cids;
+        tool.ajaxGetSync('/platform/getChannelOption',function(result){
+            cids = {}
+            if(result.state){
+                var list = result.data
+                var select = $('select[name=cid]');
+                for(var i in list){
+                    cids[list[i]['cid']] = list[i]['cname'];
+                    select.append('<option value="'+list[i]['cid']+'"> ['+list[i]['cid']+ ']-'+list[i]['cname']+'</option>');
+                }
+                form.render('select');
+            }
+        })
+       
+        var agtids;
+        tool.ajaxGetSync('/mk/getAgentOption',function(result){
+            agtids = {}
+            if(result.state){
+                var list = result.data
+                var select = $('select[name=agtid]');
+                for(var i in list){
+                    agtids[list[i]['agtid']] = list[i]['agtname'];
+                    select.append('<option value="'+list[i]['agtid']+'"> ['+list[i]['agtid']+ ']-'+list[i]['agtname']+'</option>');
+                }
+                form.render('select');
+            }
+        })
+        
+        table.render({
+            elem: '#my-table'
+            ,size: 'sm'
+            ,url:'/mk/getAgentRebateList'
+            // ,cellMinWidth: 60
+            // ,height: 'full-100'
+            ,cols: [[
+                {field:'cid_txt', title: '渠道'}
+                ,{field:'agtid_txt',  title: '代理'}
+                ,{field:'rebate',  title: '返点'}
+                ,{field:'atime', title: '添加时间'}
+                ,{field:'mtime', title: '修改时间'}
+                ,{title: '操作', fixed: 'right', width:150, align:'center', toolbar: '#my-operate'}
+            ]]
+            // ,page: {
+            //     layout: ['prev', 'page', 'next', 'skip' ,'count']
+            //     ,limit:15
+            // }
+            ,parseData: function(res){
+                // console.log(res)
+                var list = res.data.list;
+                if(list != undefined && list.length>0){
+                    for(var i=0;i<list.length;i++){
+                        list[i].atime =  tool.toDateString(list[i].atime);
+                        list[i].cid_txt = cids[list[i].cid]
+                        list[i].agtid_txt = agtids[list[i].agtid]
+                    }
+                }
+                return {
+                    "code": 0,
+                    'msg': "获取数据成功！",
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            }
+            ,done: function(res, curr, count){
+
+            }
+        });
+
+        //监听搜索
+        form.on('submit(filter-search)', function(data){
+            var field = data.field;
+            //执行重载
+            table.reload('my-table', {
+                where: field
+            });
+        });
+
+        //监听工具条
+        table.on('tool(filter-table)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'del'){
+                layer.confirm('真的删除么', function(index){
+                    del(data);
+                    obj.del();
+                    layer.close(index);
+                });
+            } else if(obj.event === 'edit'){
+                add(data);
+            }
+        });
+        // 添加渠道按钮
+        $(".js-add").click(function(){
+            add();
+        })
+
+        // 添加渠道
+        function add(edit){
+            form.val('filter-form',{id:0,cid:0,agtid:0,rebate:''})
+            layer.open({
+                title: '添加返点配置',
+                type: 1,
+                area: ["450px", "500px"],
+                content: $('#add-form'),
+                btn: ['确定'],
+                success: function(layero,index){
+                    form.val('filter-form',edit)
+                    form.render('select')
+                },
+                yes: function (index, layero) {
+                    $.post('/mk/addAgentRebateAction',form.val('filter-form'),function(re){
+                        layer.open({
+                            type: 1,
+                            title: false,
+                            closeBtn: 0,
+                            shadeClose: true,
+                            content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                            time: 1000,
+                        });
+                        if(re.state){
+                            layer.close(index);
+                        }
+                    },'json');
+                    
+                },
+                cancel: function(index, layero){ 
+                } 
+            });
+
+        }
+
+        // 删除渠道
+        function del(data){
+            // console.log(data);
+            var id = data.id;
+            $.post('/mk/delAgentRebateAction',{'id':id},function(re){
+                // console.log(re)
+                layer.open({
+                    type: 1,
+                    title: false,
+                    closeBtn: 0,
+                    shadeClose: true,
+                    content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                    time: 1000,
+                });
+            },'json');
+        }
+
+    });
+</script>
+<{include file="../public/foot.html"}>

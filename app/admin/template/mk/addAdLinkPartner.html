@@ -1,0 +1,138 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-label{width:200px;}
+.layui-input-inline{width:500px!important;}
+.js-lname-tips{
+    font-size: 12px;
+    line-height: 17px;
+    height: 30px;
+    display: block;
+    color: #CCCCCC;
+    font-weight: normal;
+}
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                <input type="hidden" name="linkid" value="" />
+                <div class="layui-form-item js-linkid" style="display: none;">
+                    <label class="layui-form-label">推广链ID</label>
+                    <div class="layui-input-inline" style="font-size: 30px;line-height: 34px;margin-left: 3px;">
+                        <span class="js-linkid-txt" style="color:#262626"></span> 
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">推广链名称</label>
+                    <div class="layui-input-inline" >
+                        <input type="text" class="layui-input" name="lname" value="" placeholder="用占位符{初始数字}，如jdxmj-KA50-{1}，将创建jdxmj-KA50-0001，jdxmj-KA50-0002...等">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">选择联运商</label>
+                    <div class="layui-input-inline">
+                        <select name="pid" lay-search="" lay-filter="pid">
+                            <option value="">选择联运商</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">选择游戏</label>
+                    <div class="layui-input-inline">
+                        <select name="gid" lay-search="" lay-filter="gid">
+                            <option value="">选择游戏</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">选择推广渠道</label>
+                    <div class="layui-input-inline">
+                        <select name="cid" lay-search="" lay-filter="cid">
+                            <option value="">选择渠道</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">选择投放账户</label>
+                    <div class="layui-input-inline">
+                        <select name="accid" lay-search="" lay-filter="accid">
+                            <option value="">选择投放账户</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="layui-form-item js-number">
+                    <label class="layui-form-label">批量创建数量</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="number" value="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label"></label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm"  lay-submit lay-filter="commit"> 保 存 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['form','tool'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var tool = layui.tool;
+    var id = tool.getQueryString('id') || '';
+
+
+    tool.getPartnerOption({pid:-1})
+    tool.getGameOption({apptype:1})
+
+    form.on('select(pid)', function (data) {
+        var pid = data.value
+        if(pid>0){
+            tool.getChannelOption({pid:pid})
+        }
+    })
+
+    form.on('select(cid)', function (data) {
+        var cid = data.value
+        if(cid>0){
+            tool.getAdAccountOption({cid:cid})
+        }
+    })
+
+    //监听提交
+    form.on('submit(commit)', function(data){
+        tool.ajaxPost('/mk/addAdLinkPartnerAction',form.val('filter-form'),function(re){
+            // console.log(re);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 0,
+                shadeClose: true,
+                content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time: 2000,
+                end:function(){
+                    if(re.state == true){
+                        closeLayer()
+                        parent.window.location.reload();
+                    }
+                }
+            });
+        },'json');
+        return false;
+    });
+
+    $('#closeBtn').on('click',function(){
+        closeLayer()
+    });
+
+    function closeLayer(){
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index); //再执行关闭
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

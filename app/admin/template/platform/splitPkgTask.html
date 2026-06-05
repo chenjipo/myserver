@@ -1,0 +1,176 @@
+<{include file="../public/head.html"}>
+<style>
+    .layui-table-view .layui-table[lay-size=sm] .layui-table-cell{
+        height:66px;
+        line-height: 66px;
+    }
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <span class="layui-badge layui-bg-cyan">分包总数：<i data="total">0</i></span>
+            <span class="layui-badge layui-bg-orange">分包中：<i data="ing">0</i></span>
+            <span class="layui-badge layui-bg-blue">分包等待中：<i data="wait">0</i></span>
+            <span class="layui-badge layui-bg-green">分包成功数：<i data="success">0</i></span>
+            <span class="layui-badge">分包失败数：<i data="error">0</i></span>
+
+            <div class="layui-progress layui-progress-big" lay-showpercent="true" lay-filter="demo">
+                <div class="layui-progress-bar" lay-percent=""></div>
+                <p style="position:relative;z-index: 2;text-align:center;color:#fff;">0</p>
+            </div>
+        </div>
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form" lay-filter="filter-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select id="gid" name="gid" lay-search="" lay-filter='gid'>
+                            <option value="">请选择游戏</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline" style="width:120px">
+                        <select id="cid" name="cid" lay-search="" lay-filter='cid'>
+                            <option value="">请选择渠道</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline" style="width:150px">
+                        <input type="text" class="layui-input" name="pkg" value="" placeholder="渠道包标识">
+                    </div>
+                    <div class="layui-input-inline" style="width:150px">
+                        <input type="text" class="layui-input" name="specname" value="" placeholder="别名">
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 筛 选 </button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+                    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['index','tool','table'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var table = layui.table;
+    var tool = layui.tool;
+
+    var gids,cids
+    tool.ajaxGetSync('/platform/getGameOption',function(result){
+        gids = {}
+        if(result.state){
+            var list = result.data
+            var select = $('select[name=gid]');
+            for(var i in list){
+                gids[''+list[i].gid] = list[i]
+                select.append('<option value="'+list[i]['gid']+'"> ['+list[i]['gid']+ ']-'+list[i]['gname']+'</option>');
+            }
+            form.render('select');
+        }
+    })
+
+    tool.ajaxGetSync('/platform/getChannelOption',function(result){
+        cids = {}
+        if(result.state){
+            var list = result.data
+            var select = $('select[name=cid]');
+            for(var i in list){
+                cids[''+list[i].cid] = list[i].cname
+                select.append('<option value="'+list[i]['cid']+'"> ['+list[i]['cid']+ ']-'+list[i]['cname']+'</option>');
+            }
+            form.render('select');
+        }
+    })
+
+    var intval = setInterval(function(){
+        var params = form.val('filter-form')
+        var data = []
+        for (let key in params) {
+            data.push(key+"="+params[key])
+        }
+        var dataStr = data.join('&')
+        tool.ajaxGet('/platform/splitPkgTaskProgress?'+dataStr,function(result){
+            if(result.state){
+                $('i[data=total]').text(result.data.total);
+                $('i[data=ing]').text(result.data.ing);
+                $('i[data=wait]').text(result.data.wait);
+                $('i[data=success]').text(result.data.success);
+                $('i[data=error]').text(result.data.error);
+                element.progress('demo', parseInt((result.data.success*100)/result.data.total)+'%');
+                $('.layui-progress-bar').next('p').text(result.data.success+'/'+result.data.total);
+            }
+        });
+    },2000)
+
+    table.render({
+        elem: '#my-table'
+        ,size: 'sm'
+        ,url:'/platform/getSplitPkgTaskList'
+        ,cols: [[
+            {field:'gid_txt', title: '游戏',width:150}
+            ,{field:'cid_txt', title: '渠道',width:100}
+            ,{field:'pkg', title: '包标识',width:160}
+            ,{field:'pkgver', title: '版本'}
+            ,{field:'state_txt', title: '状态',width:100}
+            ,{field:'atime',  title: '添加时间',width:150}
+            ,{field:'stime',  title: '开始时间',width:150}
+            ,{field:'ftime', title: '结束时间',width:150}
+            ,{field:'specname', title: '别名',width:100}
+            ,{field:'specicon', title: 'icon',width:100}
+            // ,{title:'操作', align:'center', fixed:'right',toolbar: '#my-operate'}
+        ]]
+        ,page: {
+            layout: ['prev', 'page', 'next', 'skip' ,'count']
+            ,limit:20
+        }
+        ,parseData: function(res){
+            var list = res.data.list;
+            if(list != undefined && list.length>0){
+                for(var i=0;i<list.length;i++){
+                    list[i].gid_txt = gids[list[i].gid]['gname']
+                    list[i].cid_txt = cids[list[i].cid]
+                    if(list[i].state == 0){
+                        list[i].state_txt = '<span style="color:red">等待分包</span>'
+                    }else if(list[i].state == 1){
+                        list[i].state_txt = '<span style="color:orange">分包中</span>'
+                    }else if(list[i].state == 2){
+                        list[i].state_txt = '<span style="color:green">分包完成</span>'
+                    }else{
+                        list[i].state_txt = '<span style="color:gray">分包错误</span>'
+                    }
+                    list[i].atime =  tool.toDateString(list[i].atime);
+                    list[i].stime =  list[i].stime>0 ? tool.toDateString(list[i].stime) : '';
+                    list[i].ftime =  list[i].ftime>0 ? tool.toDateString(list[i].ftime) : '';
+                    list[i].specicon = list[i].specicon ?'<img src="'+list[i].specicon+'" style="width:auto;height:64px">':'';
+                }
+            }
+            return {
+                "code": 0,
+                'msg': "获取数据成功！",
+                "count": res.data.total,
+                "data": res.data.list
+            }
+        }
+        ,done: function(res, curr, count){
+
+        }
+    });
+
+    //监听搜索
+    form.on('submit(filter-search)', function(data){
+        var field = data.field;
+        //执行重载
+        table.reload('my-table', {
+            where: field
+        });
+    });
+});
+</script>
+<{include file="../public/foot.html"}>

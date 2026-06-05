@@ -1,0 +1,172 @@
+<{include file="../public/head.html"}>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select id="gid" name="gid" lay-search="" lay-filter='gid'>
+                            <option value="">请选择游戏</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline" style="width:120px">
+                        <select id="cid" name="cid" lay-search="" lay-filter='cid'>
+                            <option value="">请选择渠道</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline" style="width:150px">
+                        <input type="text" class="layui-input" name="pkg" value="" placeholder="渠道包标识">
+                    </div>
+                    <div class="layui-input-inline" style="width:150px">
+                        <input type="text" class="layui-input" name="specname" value="" placeholder="别名">
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 筛 选 </button>
+                    <button type="button" class="layui-btn layui-btn-sm" id="viewSub"> 查看分包 </button>
+                    <button type="submit" class="layui-btn layui-btn-sm layui-btn-normal js-add"> 添 加 </button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['index','tool','table'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var table = layui.table;
+    var tool = layui.tool;
+
+    var gids
+    tool.ajaxGetSync('/platform/getGameOption?apptype=1',function(result){
+        gids = {}
+        if(result.state){
+            var list = result.data
+            var select = $('select[name=gid]');
+            for(var i in list){
+                gids[''+list[i].gid] = list[i]
+                select.append('<option value="'+list[i]['gid']+'"> ['+list[i]['gid']+ ']-'+list[i]['gname']+'</option>');
+            }
+            form.render('select');
+        }
+    })
+    
+    var cids = tool.getChannelOption()
+    console.log(cids)
+
+    table.render({
+        elem: '#my-table'
+        ,size: 'sm'
+        ,url:'/platform/getPkgList'
+        ,cols: [[
+            {field:'gid_txt', title: '游戏(gid)',width:150}
+            ,{field:'cid_txt', title: '渠道(cid)',width:100}
+            ,{field:'pkg', title: '包标识',width:160}
+            ,{field:'pkgver', title: '版本'}
+            ,{field:'status_txt', title: '状态',width:100}
+            ,{field:'durl', title: '下载链接',width:200}
+            ,{field:'atime',  title: '创建时间',width:150}
+            ,{field:'mtime', title: '修改时间',width:150}
+            ,{title:'操作', align:'center', fixed:'right',width:150,toolbar: '#my-operate'}
+        ]]
+        ,page: {
+            layout: ['prev', 'page', 'next', 'skip' ,'count']
+            ,limit:20
+        }
+        ,parseData: function(res){
+            var list = res.data.list;
+            if(list != undefined && list.length>0){
+                for(var i=0;i<list.length;i++){
+                    list[i].gid_txt = gids[list[i].gid]['gname']
+                    list[i].cid_txt = cids[list[i].cid]['cname']
+                    if(gids[list[i].gid]['apptype'] == 1){
+                        list[i].gid_txt = '<i style="color:#006633" class="layui-icon layui-icon-android"></i>' +list[i].gid_txt
+                    }
+                    else if(gids[list[i].gid]['apptype'] == 2){
+                        list[i].gid_txt = '<i style="color:grey" class="layui-icon layui-icon-ios"></i>' +list[i].gid_txt
+                    }
+                    else if(gids[list[i].gid]['apptype'] == 3){
+                        list[i].gid_txt = '<i style="" class="layui-icon layui-icon-login-wechat"></i>' +list[i].gid_txt
+                    }
+                    if(list[i].status == 0){
+                        list[i].status_txt = '<span style="color:red">分包中</span>'
+                    }else if(list[i].status == 1){
+                        list[i].status_txt = '<span style="color:green">正常可用</span>'
+                    }else if(list[i].status == 2){
+                        list[i].status_txt = '<span style="color:gray">已删除链接</span>'
+                    }else{
+                        list[i].status_txt = '<span style="color:gray">未知状态</span>'
+                    }
+                    list[i].atime =  tool.toDateString(list[i].atime);
+                }
+            }
+            return {
+                "code": 0,
+                'msg': "获取数据成功！",
+                "count": res.data.total,
+                "data": res.data.list
+            }
+        }
+        ,done: function(res, curr, count){
+
+        }
+    });
+
+    //监听搜索
+    form.on('submit(filter-search)', function(data){
+        var field = data.field;
+        //执行重载
+        table.reload('my-table', {
+            where: field
+        });
+    });
+
+    //监听工具条
+    table.on('tool(filter-table)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'del'){
+            return layer.msg('暂不支持删除！')
+        } else if(obj.event === 'edit'){
+            add(data);
+        } 
+    });
+
+    // 添加APP按钮
+    $(".js-add").click(function(){
+        add();
+    })
+
+    function add(edit){
+        var api = "/platform/addPkgPage";
+        var txt = "添加";
+        if(edit){
+            api += "?id="+edit.id;
+            txt = "编辑"
+        }
+        var index = layui.layer.open({
+            title: txt,
+            type: 2,
+            area: ["1px", "1px"],
+            content: api
+        })
+        layui.layer.full(index);
+        $(window).on("resize",function(){
+            layui.layer.full(index);
+        })
+    }
+
+    $('#viewSub').click(function(){
+        $(this).attr('lay-href','/platform/splitPkgTaskPage')
+    })
+
+});
+</script>
+<{include file="../public/foot.html"}>

@@ -1,0 +1,147 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-label{width:200px;}
+.my-layui-form .layui-input-block {
+    margin-left: 208px;
+}
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                <input type="hidden" name="cid" value="" />
+                <div class="layui-form-item">
+                    <label class="layui-form-label">渠道名称</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="cname" value="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">渠道简称(英文)</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="slug" value="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">排序</label>
+                    <div class="layui-input-inline" style="width: 180px">
+                        <input type="text" class="layui-input" name="sort"  value="100" placeholder="数字越大越靠前">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">渠道类型</label>
+                    <div class="layui-input-block">
+                        <input type="radio" name="type" lay-filter="type" value="1" title="其他" checked>
+                        <input type="radio" name="type" lay-filter="type" value="2" title="信息流推广">
+                        <input type="radio" name="type" lay-filter="type" value="3" title="搜索推广" >
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">选择联运商</label>
+                    <div class="layui-input-inline">
+                        <select name="pid" lay-search="" lay-filter="pid">
+                            <option value="">选择联运商</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="layui-form-item">
+                    <label class="layui-form-label">监测链接模板-安卓</label>
+                    <div class="layui-input-block">
+                        <input type="text" class="layui-input" name="aquery"  value="" placeholder="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">监测链接模板-iOS</label>
+                    <div class="layui-input-block">
+                        <input type="text" class="layui-input" name="iquery"  value="" placeholder="">
+                    </div>
+                </div>
+                
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">渠道广告主账户配置模板</label>
+                    <div class="layui-input-block">
+                      <textarea name="config_tpl" placeholder="secret_key=>接口秘钥" class="layui-textarea"></textarea>
+                    </div>
+                    <div class="layui-input-block">
+                        <div style="color:burlywood">此处由技术填写：一行一个配置，格式如 secret_key=>配置名称</div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">渠道平台开发者配置</label>
+                    <div class="layui-input-block">
+                      <textarea name="config_dev" rows="6" placeholder="appid=>370415698291
+secret=>u1rxa84pz9owgj7ilmqbeskdc6yn02hv" class="layui-textarea"></textarea>
+                    </div>
+                    <div class="layui-input-block">
+                        <div style="color:burlywood">此处由技术填写：一行一个配置，格式如 appid=>370415698291</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label"></label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm"  lay-submit lay-filter="commit"> 保 存 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['tool','form'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var tool = layui.tool;
+    var cid = tool.getQueryString('cid') || '';
+
+    tool.getPartnerOption()
+
+    if(Number(cid)>0){
+        tool.ajaxGet('/platform/getChannelInfo?cid='+cid, function(result){
+            if(result.state){
+                form.val('filter-form',result.data);
+            }else{
+                layer.msg(re.msg);
+            }
+        });
+        $('input[name=slug]').attr('readonly',true)
+        $('input[name=type]').attr('disabled',true)
+        $('select[name=pid]').attr('disabled',true)
+        form.render();
+    }
+
+    //监听提交
+    form.on('submit(commit)', function(data){
+        tool.ajaxPost('/platform/addChannelAction',form.val('filter-form'),function(re){
+            // console.log(re);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 0,
+                shadeClose: true,
+                content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time: 2000,
+                end:function(){
+                    if(re.state == true){
+                        closeLayer()
+                        parent.window.location.reload();
+                    }
+                }
+            });
+        },'json');
+        return false;
+    });
+
+    $('#closeBtn').on('click',function(){
+        closeLayer()
+    });
+
+    function closeLayer(){
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index); //再执行关闭
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

@@ -1,0 +1,88 @@
+<{include file="../public/head.html"}>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form" id="layuiadmin-form-useradmin">
+                <input type="hidden" name="admin_id" value="" />
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label"> 账号</label>
+                    <div class="layui-input-inline">
+                        <input type="text"  class="layui-input"  name="user" placeholder="" value="" readonly>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label"> 名称</label>
+                    <div class="layui-input-inline">
+                        <input type="text"  class="layui-input"  name="nick" placeholder="" value="" readonly>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label"> 手机号</label>
+                    <div class="layui-input-inline">
+                        <input type="text"  class="layui-input"  name="phone" placeholder="" value="">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">* 密码</label>
+                    <div class="layui-input-inline">
+                        <input type="password"  class="layui-input"  name="pwd" placeholder="非特殊字符,包含字母数字">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">* 确认密码</label>
+                    <div class="layui-input-inline">
+                        <input type="password"  class="layui-input"  name="pwd2" placeholder="非特殊字符,包含字母数字">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label"></label>
+                    <div class="layui-input-inline">
+                        <button type="button" lay-submit lay-filter="commit" class="layui-btn layui-btn-sm"> 保 存 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['tool','form'], function(){
+        var $ = layui.$;
+        var form = layui.form;
+        var tool = layui.tool;
+        var id = tool.getQueryString('id');
+
+        tool.ajaxGet('/admin/getAdminOwnInfo/?id='+id,function(result){
+            if(result.state){
+                form.val('filter-form',result.data);
+                $('input[name=pwd]').val('');
+                $('input[name=pwd2]').val('');
+            }
+        })
+        //监听提交
+        form.on('submit', function(data){
+            tool.ajaxPost('/admin/changePwAction',data.field,function(re){
+                layer.open({
+                    type: 1,
+                    title:false,
+                    closeBtn: 0,
+                    shadeClose: true,
+                    content:'<p style="margin:15px 30px;">'+re.msg+'</p>',
+                    time:3000,
+                    end:function(){
+                        if(re.state == true){
+                            location.reload();
+                        }
+                    }
+                });
+            });
+        });
+    });
+</script>
+<{include file="../public/foot.html"}>

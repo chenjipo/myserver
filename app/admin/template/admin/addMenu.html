@@ -1,0 +1,209 @@
+<{include file="../public/head.html"}>
+<style>
+    .site-doc-icon li{
+        display: inline-block;
+        vertical-align: middle;
+        width: 16.5%;
+        height: 105px;
+        line-height: 18px;
+        padding: 20px 0;
+        margin-right: -1px;
+        margin-bottom: -1px;
+        border: 1px solid #e2e2e2;
+        font-size: 14px;
+        text-align: center;
+        color: #666;
+        transition: all .3s;
+        -webkit-transition: all .3s;
+    }
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                <input type="hidden" value="" name="id">
+                <div class="layui-form-item">
+                    <label class="layui-form-label" >父级：</label>
+                    <div class="layui-input-inline">
+                        <select name="parent_id" lay-search="">
+                            <option value="">顶级权限</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">名称：</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="display_name" lay-verify="required" autocomplete="off" required value="" placeholder="中文名称">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">URL：</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="route" lay-verify="" autocomplete="off" required value="" placeholder="例子：/admin/menu/">
+                    </div>
+                </div>
+
+                <div class="layui-form-item" >
+                    <label class="layui-form-label">类型：</label>
+                    <div class="layui-input-inline">
+                        <input type="radio" name="type" value="1" title="菜单" lay-filter="type"  class="create_layer_radio">
+                        <input type="radio" name="type" value="2" title="操作" lay-filter="type"  class="create_layer_radio">
+                    </div>
+                </div>
+
+                <div class="layui-form-item field_icon" >
+                    <label class="layui-form-label">图标：</label>
+                    <div class="layui-input-inline" style="display: none;">
+                        <input class="layui-input" type="hidden" name="icon" value="" >
+                    </div>
+                    <div class="layui-form-mid layui-word-aux">
+                        <button type="button" class="layui-btn layui-btn-xs" onclick="showIconsBox()">选择图标</button>
+                    </div>
+                    <div class="layui-form-mid layui-word-aux" id="icon_box">
+                        <i class="layui-icon "></i>
+                    </div>
+                </div>
+
+                <div class="layui-form-item field_show_menu">
+                    <label class="layui-form-label">显示菜单：</label>
+                    <div class="layui-input-block">
+                      <input type="checkbox" name="show_menu" lay-skin="switch" lay-text="显示|隐藏">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">排序</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="sort" lay-verify="" autocomplete="off" value="100" placeholder="">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm" lay-submit lay-filter="commit"> 保 存 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+
+layui.use(['tool','form','element'], function(){
+    var $ = layui.$;
+    var tool = layui.tool;
+    var form = layui.form
+    var id = tool.getQueryString('id') || '';
+    var route = tool.getQueryString('route') || '';
+    var name = decodeURI(tool.getQueryString('name') || '');
+
+    //选择图标
+    chioceIcon = function (obj) {
+        var icon = $(obj).data('class');
+        $("input[name='icon']").val(icon);
+        $("#icon_box").html('<i class="layui-icon '+$(obj).data('class')+'"></i> '+$(obj).data('name'));
+        layer.closeAll();
+    };
+
+    //弹出图标
+    showIconsBox = function () {
+        var index = layer.load();
+        $.get("/static/json/icons.json",function (res) {
+            layer.close(index);
+            var html = '<ul class="site-doc-icon">';
+            $.each(res,function (index,item) {
+                html += '<li onclick="chioceIcon(this)" data-class="'+item.class+'" data-name="'+item.name+'" >';
+                html += '   <i class="layui-icon '+item.class+'"></i>';
+                html += '   <div class="doc-icon-name">'+item.name+'</div>';
+                html += '   <div class="doc-icon-code"><xmp>'+item.unicode+'</xmp></div>';
+                html += '   <div class="doc-icon-fontclass">'+item.class+'</div>';
+                html += '</li>'
+            });
+            html += '</ul>';
+            layer.open({
+                type:1,
+                title:'选择图标',
+                area : ['1080px','600px'],
+                content:html
+            })
+        },'json')
+    }
+
+    //监听checkbox
+    form.on('radio(type)',function(data){
+        if(data.value == 2){
+            $('.field_show_menu,.field_icon').hide()
+        }else{
+            $('.field_show_menu,.field_icon').show()
+        }
+    });
+
+    //监听提交
+    form.on('submit(commit)', function(data){
+        tool.ajaxPost('/admin/addMenuAction',data.field,function(re){
+            // console.log(re);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 0,
+                shadeClose: true,
+                content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time: 2000,
+                end:function(){
+                    if(re.state == true){
+                        closeLayer()
+                        parent.window.location.reload();
+                    }
+                }
+            });
+        },'json');
+        return false;
+    });
+
+    tool.ajaxGetSync('/admin/getMenuTreeList/',function(result){
+        if(result.state){
+            var select = $('select[name=parent_id]');
+            result.data.forEach(element => {
+                select.append('<option value="'+element['id']+'"> '+element['html']+element['display_name']+'</option>');
+            });
+            form.render('select');
+        }
+    });
+
+    if(Number(id)>0){
+        tool.ajaxGet('/admin/getMenuInfo/?id='+id,function(result){
+            if(result.state){
+                form.val('filter-form',result.data);
+                if(result.data.type==2){
+                    $('.field_show_menu,.field_icon').hide()
+                }else{
+                    $('.field_show_menu,.field_icon').show()
+                }
+                if(result.data.icon){
+                    $("#icon_box").html('<i class="layui-icon '+result.data.icon+'"></i> ');
+                }
+                $('select[name=parent_id').val(result.data.parent_id)
+                form.render('select');
+            }
+        })
+        
+    }else{
+        $('input[name=route]').val(route)
+        $('input[name=display_name]').val(name)
+    }
+
+    $('#closeBtn').on('click',function(){
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index); //再执行关闭
+    });
+
+    function closeLayer(){
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index); //再执行关闭
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

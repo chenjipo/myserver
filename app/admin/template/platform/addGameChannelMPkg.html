@@ -1,0 +1,174 @@
+<{include file="../public/head.html"}>
+<style>
+    .layui-form-label{width:200px;}
+    /*icon上传按钮*/
+    .btn-file {position: relative; overflow: hidden;}
+    .btn-file input[type=file] {position: absolute; top: 0; right: 0; min-width: 100%; min-height: 100%; font-size: 100px; text-align: right; filter: alpha(opacity = 0); opacity: 0; outline: none; background: white; cursor: inherit; display: block;}
+    .layui-form-item .layui-input-inline {width: 600px;}
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                <input type="hidden" name="id" value="">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">选择游戏</label>
+                    <div class="layui-input-inline">
+                        <select name="gid" lay-search="" lay-filter="gid">
+                            <option value="">选择游戏</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">选择渠道</label>
+                    <div class="layui-input-inline">
+                        <select name="cid" lay-search="" lay-filter="cid">
+                            <option value="">选择渠道</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">渠道包游戏名称</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="pname" value="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">英文名</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="dpgn" value="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">渠道sdk数值id</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="channel_appid" value="" placeholder="广点通数据源id、头条应用id等等">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">咱家sdk版本</label>
+                    <div class="layui-input-inline">
+                        <select name="sdk_version" lay-search="" lay-filter="sdk_version">
+                            <option value="">选择SDK版本</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">icon</label>
+                    <div class="layui-input-inline input-group" style="height: 100%;">
+                        <img id="icon-src" src="" style="max-height:220px;max-width:80%;margin-bottom:8px;" class="img-thumbnail">
+                        <span class="layui-btn btn-success btn-file layui-btn-sm"><i class="layui-icon"></i> 选择图片(不大于250*250png)
+                            <span class="glyphicon glyphicon-floppy-open" aria-hidden="true"></span>
+                            <input type="file" name="file" value="">
+                        </span>
+                        <input type="hidden" name="icon" value="" />
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label"></label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm"  lay-submit lay-filter="commit"> 提 交 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['tool','form'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var tool = layui.tool;
+    var id = tool.getQueryString('id') || '';
+
+    tool.getGameOption({apptype:1});
+    tool.getChannelOption({pid:1});
+
+    tool.ajaxGet('/platform/getGameSdkVersionOption', function(result){
+        if(result.state){
+            var list = result.data
+            var select = $('select[name=sdk_version]');
+            for(var i in list){
+                select.append('<option value="'+list[i]['id']+'"> '+list[i]['sdk_version']+'</option>');
+            }
+            form.render('select');
+        }
+    })
+
+    if(Number(id)>0){
+        tool.ajaxGet('/platform/getGameChannelMPkgInfo?id='+id, function(result){
+            if(result.state){
+                form.val('filter-form',result.data);
+                $('#icon-src').attr('src',result.data.icon)
+            }else{
+                layer.msg(re.msg);
+            }
+        });
+        form.render();
+    }
+
+    //监听提交
+    form.on('submit(commit)', function(data){
+        tool.ajaxPost('/platform/addGameChannelMPkgAction',form.val('filter-form'),function(re){
+            // console.log(re);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 0,
+                shadeClose: true,
+                content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time: 2000,
+                end:function(){
+                    if(re.state == true){
+                        closeLayer()
+                        parent.window.location.reload();
+                    }
+                }
+            });
+        },'json');
+        return false;
+    });
+
+    // 图标icon上传
+    $('input[name="file"]').on('change',function(){
+        var parent = $(this).parents('.input-group');
+        var index = layer.load(2, {
+            shade: [0.6,'#fff'] //0.1透明度的白色背景
+        });
+        $.ajax({
+            url: '/platform/uploadGameIcon?file_name=file',  //server script to process data
+            type: 'POST',
+            success: function(re){
+                layer.close(index);
+                re = JSON.parse(re);
+                console.log(re)
+                if(re.state){
+                    parent.find('input[name=icon]').val(re.data.url);
+                    parent.find('.img-thumbnail').attr('src',re.data.url);
+                }else{
+                    layer.msg(re.msg);
+                }
+            },
+            error: function(error){
+                layer.msg(error);
+            },
+            data: new FormData($('form')[0]),
+            cache: false,
+            contentType: false,
+            processData: false
+        });
+    });
+
+    $('#closeBtn').on('click',function(){
+        closeLayer()
+    });
+
+    function closeLayer(){
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index); //再执行关闭
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

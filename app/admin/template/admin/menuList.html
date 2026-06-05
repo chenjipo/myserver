@@ -1,0 +1,143 @@
+<{include file="../public/head.html"}>
+<style>
+
+</style>
+<div class="layui-fluid">
+    <div class="layui-card my-card">
+        <form class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline layui-btn-group">
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-normal js-add"> 添 加 </button>
+                    <a lay-href="/admin/autoGetNavPage/" class="layui-btn layui-btn-sm layui-btn-normal" lay-text="自动菜单"> 自动获取 </a>
+                </div>
+            </div>
+        </form>
+
+        <div class="layui-card-body layui-form  my-layui-form">
+            <table id="dataTable" lay-filter="dataTable" class="mytable"></table>
+            <script type="text/html" id="options">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-sm" lay-event="edit">编辑</a>
+                    <a class="layui-btn layui-btn-danger layui-btn-sm" lay-event="del">删除</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<script>
+    layui.extend({
+        treetable: 'modules/treetable-lay/treetable'
+    }).use(['index','tool','layer', 'table', 'form', 'treetable'], function () {
+        var $ = layui.jquery;
+        var layer = layui.layer;
+        var form = layui.form;
+        var table = layui.table;
+        var treetable = layui.treetable;
+        var tool = layui.tool;
+        //用户表格初始化
+
+        // 渲染表格
+        var dataTable = function (where) {
+            var where = where || {}
+            treetable.render({
+                treeColIndex: 1,          // treetable新增参数
+                treeSpid: 0,             // treetable新增参数
+                treeIdName: 'id',       // treetable新增参数
+                treePidName: 'parent_id',     // treetable新增参数
+                treeDefaultClose: true,   // treetable新增参数
+                treeLinkage: false,        // treetable新增参数
+                elem: '#dataTable',
+                url: "/admin/getMenuList",
+                where: where,
+                cols: [[ //表头
+                    {field: 'id', title: 'ID', width: 80}
+                    , {field: 'display_name', title: '权限名称', width: 200}
+                    , {field: 'type_name', title: '类型',width: 80, templet: function (d) {
+                            if(d.type == 1) return '<button type="button" class="layui-btn layui-btn-primary layui-border-green layui-btn-xs">菜单</button>';
+                            if(d.type == 2) return '<button type="button" class="layui-btn layui-btn-primary layui-border-blue layui-btn-xs">权限</button>';
+                        }
+                    }
+                    , {field: 'show_name', title: '显示',width: 80, templet: function (d) {
+                            if(d.show_menu == 1) return '<button type="button" class="layui-btn layui-btn-primary layui-border-orange layui-btn-xs">显示</button>';
+                            if(d.show_menu == 0) return '<button type="button" class="layui-btn layui-btn-primary layui-btn-xs">隐藏</button>';
+                        }
+                    }
+                    , {
+                        field: 'icon_name', title: '图标', width: 60, templet: function (d) {
+                            return '<i class="layui-icon ' + d.icon + '"></i>';
+                        }
+                    } 
+                    , {field: 'route', title: 'URL', width: 250}
+                    , {field: 'atime_name', title: '创建时间', width: 150, templet: function (d) {
+                            return tool.toDateString(d.atime)
+                        }
+                    }
+                    , {field: 'mtime', title: '更新时间', width: 150,}
+                    , {width: 180, align: 'center', toolbar: '#options'}
+                ]]
+            });
+        }
+        dataTable(); //调用此函数可重新渲染表格
+       
+        //监听搜索
+        form.on('submit(filter-search)', function(data){
+            var where = data.field;
+            //执行重载
+            dataTable(where);
+        });
+        //监听工具条
+        table.on('tool(dataTable)', function (obj) { //注：tool是工具条事件名，dataTable是table原始容器的属性 lay-filter="对应的值"
+            var data = obj.data //获得当前行数据
+                , layEvent = obj.event; //获得 lay-event 对应的值
+            if (layEvent === 'del') {
+                layer.confirm('温馨提示，删除父级权限后，其下子菜单将会一并删除，确认删除吗？', function (index) {
+                    layer.close(index)
+                    var load = layer.load();
+                    var id = data.id;
+                    tool.ajaxPost('/admin/deleteMenuAction',{'id':id},function(res){
+                        layer.close(load);
+                        layer.open({
+                            type: 1,
+                            title: false,
+                            closeBtn: 0,
+                            shadeClose: true,
+                            content: '<p style="margin:15px 30px;">'+res.msg+'</p>',
+                            time: 500,
+                            end: function(){
+                                window.location.reload();
+                            }
+                        });
+                    });
+                });
+            } else if (layEvent === 'edit') {
+                add(data)
+            }
+        });
+
+        // 添加按钮
+        $(".js-add").click(function(){
+            add();
+        })
+
+        // 添加
+        function add(edit){
+            var api = "/admin/addMenuPage/";
+            var txt = "添加";
+            if(edit){
+                api += "?id="+edit.id;
+                txt = "编辑"
+            }
+            var index = layui.layer.open({
+                title: txt,
+                type: 2,
+                area: ["1px", "1px"],
+                content: api
+            })
+            layui.layer.full(index);
+            $(window).on("resize",function(){
+                layui.layer.full(index);
+            })
+        }
+        
+    })
+</script>

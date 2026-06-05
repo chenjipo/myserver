@@ -1,0 +1,366 @@
+<{include file="../public/head.html"}>
+<style>
+    .layui-form-switch {
+        position: relative;
+        height: 17px;
+        line-height: 17px;
+    }
+    .layui-form-switch i {
+        width: 10px;
+        height: 10px;
+    } 
+    
+    </style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select id="agtid" name="agtid" lay-search="">
+                            <option value="">请选择代理</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select id="cpnid" name="cpnid" lay-search="">
+                            <option value="">请选择主体</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select id="pitid" name="pitid" lay-search="">
+                            <option value="">选择投放人员</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select name="status" lay-search="" lay-filter="status">
+                            <option value="">选择状态</option>
+                            <option value="1" selected>启用中</option>
+                            <option value="2">停用</option>
+                        </select>
+                    </div>
+                </div>
+              
+                <div class="layui-inline layui-btn-group">
+                    <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 筛 选 </button>
+                    <button type="submit" class="layui-btn layui-btn-sm layui-btn-normal js-add"> 添 加 </button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="auth"><i class="layui-icon layui-icon-auz"></i>授权</a>
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="advertiser"><i class="layui-icon layui-icon-refresh"></i>广告主</a>
+                    {{# if(d.status == 0){ }}
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="stop"><i class="layui-icon layui-icon-close"></i>停用</a>
+                    {{# }else{ }}
+                    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="start"><i class="layui-icon layui-icon-light"></i>启用</a>
+                    {{# } }}
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<form class="layui-form" style="display:none;margin-top:20px;" lay-filter="add-form" id="add-form">
+    <input type="hidden" name="id" value="">
+    <div class="layui-form-item">
+        <label class="layui-form-label" style="width:150px;">管家登陆账号</label>
+        <div class="layui-input-inline" style="width:300px">
+            <input type="text" class="layui-input" name="account" value="">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label"  style="width:150px;">选择代理</label>
+        <div class="layui-input-inline" style="width:300px">
+            <select id="agtid" name="agtid" lay-search="">
+                <option value="">请选择代理</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label"  style="width:150px;">选择主体</label>
+        <div class="layui-input-inline" style="width:300px">
+            <select id="cpnid" name="cpnid" lay-search="">
+                <option value="">请选择主体</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label"  style="width:150px;">选择投放人员</label>
+        <div class="layui-input-inline" style="width:300px">
+            <select id="pitid" name="pitid" lay-search="">
+                <option value="">选择投放人员</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label"  style="width:150px;">渠道类型</label>
+        <div class="layui-input-inline" style="width:300px">
+            <input type="radio" name="type" lay-filter="channel" value="tt" title="信息流">
+            <input type="radio" name="type" lay-filter="channel" value="semtt" title="SEM" >
+        </div>
+    </div>
+</form>
+<script type="text/html" id="switchTpl">
+    <input type="checkbox" name="adv_status" value="{{d.advertiser_id}}##{{d.advertiser_name}}##{{d.advertiser_major}}" lay-skin="switch" lay-text="开启|关闭" lay-filter="adv_status" {{ d.accid > 0 && d.status == 0 ? 'checked' : '' }}>
+</script>
+<script>
+
+    layui.use(['index', 'table','form','tool'], function(){
+        var $ = layui.$;
+        var form = layui.form;
+        var table = layui.table;
+        var tool = layui.tool;
+
+        var pitids = tool.getPitcherOption();
+        var agtids = tool.getAgentOption();
+        var cpnids = tool.getCompanyOption();
+
+        table.render({
+            elem: '#my-table'
+            ,size: 'sm'
+            ,url:'/mk/getTtMajordomoList?status='+$('select[name=status]').val()
+            // ,cellMinWidth: 60
+            // ,height: 'full-100'
+            ,cols: [[
+                {field:'id',  title: 'ID', width: 50}
+                ,{field:'account', title: '管家号',width: 180}
+                ,{field:'pitid_txt', title: '投放人员',width: 80}
+                ,{field:'agtid_txt', title: '代理',width: 80}
+                ,{field:'cpnid_txt', title: '主体',width: 200}
+                ,{field:'auth_time_name', title: '是否授权',width: 80}
+                ,{field:'status_name', title: '状态',width: 80}
+                ,{field:'adv_num', title: '启用账户数',width: 100}
+                ,{field:'atime',  title: '创建时间',width:150}
+                ,{field:'mtime', title: '修改时间',width:150}
+                ,{title: '操作', fixed: 'right', width:280, align:'center', toolbar: '#my-operate'}
+            ]]
+            ,page: {
+                layout: ['prev', 'page', 'next', 'skip' ,'count']
+                ,limit:20
+            }
+            ,parseData: function(res){
+                // console.log(res)
+                var list = res.data.list;
+                if(list != undefined && list.length>0){
+                    for(var i=0;i<list.length;i++){
+                        list[i].atime =  tool.toDateString(list[i].atime);
+                        list[i].auth_time_name = Number(list[i].auth_time) >0 ?'已授权':'等待授权'
+                        list[i].status_name = Number(list[i].status) == 1 ?'已停用':'<span style="color:green;">启用中</span>'
+                        list[i].cpnid_txt = cpnids[list[i]['cpnid']] ? (list[i]['cpnid'] + '-' + cpnids[list[i]['cpnid']]['cpnname']):'-';
+                        list[i].pitid_txt = pitids[list[i]['pitid']]? (list[i]['pitid'] + '-' + pitids[list[i]['pitid']]['pitname']) : '-';
+                        list[i].agtid_txt = agtids[list[i]['agtid']] ?(list[i]['agtid'] + '-' + agtids[list[i]['agtid']]['agtname']):'-';
+                    }
+                }
+                return {
+                    "code": 0,
+                    'msg': "获取数据成功！",
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            }
+            ,done: function(res, curr, count){
+
+            }
+        });
+
+        //监听搜索
+        form.on('submit(filter-search)', function(data){
+            var field = data.field;
+            //执行重载
+            table.reload('my-table', {
+                where: field
+            });
+        });
+
+        //监听工具条
+        table.on('tool(filter-table)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'stop'){
+                layer.confirm('确认停用吗，管家号及已同步的后台账户将会一并停用，您也可以以后重新启用管家号！', function(index){
+                    changeTtMajordomoStatus(data);
+                    layer.close(index);
+                });
+            } else if(obj.event === 'start'){
+                layer.confirm('确认启用吗！启用之后您还需要更新广告主账户的状态！', function(index){
+                    changeTtMajordomoStatus(data);
+                    layer.close(index);
+                });
+            }else if(obj.event === 'edit'){
+                add(data);
+            } else if(obj.event === 'auth'){
+                auth(data);
+            } else if(obj.event === 'advertiser'){
+                layer.confirm('确认更新吗', function(index){
+                    advertiser(data);
+                    layer.close(index);
+                });
+                
+            }
+        });
+        // 添加渠道按钮
+        $(".js-add").click(function(){
+            add();
+        })
+
+        function advertiser(data){
+            layer.load();
+            tool.ajaxGet('/mk/pullTtAdvertisers?account='+data.account, function(result){
+                layer.closeAll('loading');
+                if(result.state){
+                    if(result.data.total>0){
+
+                        var content = '<div class="layui-fluid" id="show-info">'
+                            content += '<div class="layui-card">'
+                            content += '<div class="layui-card-body my-card">'
+                            content += '<table class="layui-table" id="info-table" lay-filter="filter-table2"></table>'
+                            content += '</div>'
+                            content += '</div>'
+                            content += '</div>'
+
+                        layer.open({
+                            type: 1,
+                            // r表示right,b表示bottom
+                            offset: 'rb',
+                            // 标题
+                            title: '详细信息',
+                            //
+                            // anim 特效 0-平滑放大 1-从上掉落 2-从底部往上滑入 3-从左滑入 4-从左翻转 5-渐显 6-抖动
+                            anim: 2,
+                            // 第一个参数宽度，第二个参数高度
+                            area: ['688px', '100%'],
+                            // 内容区 在body中写入<div id="draw">。。。。</div>代码，即弹窗内容
+                            content: content,
+                            success: function(){
+                                var list = result.data.list || []
+                                table.render({
+                                    elem: '#info-table'
+                                    ,size: 'sm'
+                                    ,cols: [[ //标题栏
+                                        {field: 'advertiser_id', title: '广告主ID'}
+                                        ,{field: 'advertiser_name', title: '广告主名称'}
+                                        ,{field: 'status', title: '开启状态', templet: '#switchTpl'}
+                                        ]]
+                                    ,data: list
+                                    ,page: {
+                                        layout: ['prev', 'page', 'next', 'skip' ,'count']
+                                        ,limit:result.data.total
+                                    }
+                                });
+                            }
+                        })
+                    }
+                }else{
+                    layer.open({
+                        type: 1,
+                        title: false,
+                        closeBtn: 0,
+                        shadeClose: true,
+                        content: '<p style="margin:15px 30px;">'+result.msg+'</p>',
+                        time: 2000,
+                        end:function(){
+                            
+                        }
+                    });
+                }
+            });
+        }
+
+         //监听操作
+        form.on('switch(adv_status)', function(obj){
+            var val = this.value.split('##')
+            var post = {advertiser_id:val[0],advertiser_name:val[1],advertiser_major:val[2],status:obj.elem.checked}
+            tool.ajaxPost('/mk/syncTtAdvertiser',post,function(re){
+                layer.open({
+                    type: 1,
+                    title: false,
+                    closeBtn: 0,
+                    shadeClose: true,
+                    content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                    time: 2000,
+                    end:function(){
+                        // if(re.state == true){
+                        //     window.location.reload();
+                        // }
+                    }
+                });
+            });
+        });
+
+        function auth(data){
+            window.open(data.auth_url)
+        }
+
+        function changeTtMajordomoStatus(data){
+            // layer.msg('暂时未开放')
+            var status = data.status == 0 ? 1 : 0;
+            var post = {status:status,id:data.id}
+            tool.ajaxPost('/mk/changeTtMajordomoStatus',post,function(re){
+                layer.open({
+                    type: 1,
+                    title: false,
+                    closeBtn: 0,
+                    shadeClose: true,
+                    content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                    time: 2000,
+                    end:function(){
+                        if(re.state == true){
+                            window.location.reload();
+                        }
+                    }
+                });
+            });
+        }
+
+        function add(data){
+            if(data !== undefined && data.id){
+                tool.ajaxGet('/mk/getTtMajordomoInfo?id='+data.id, function(result){
+                    if(result.state){
+                        var ret = result.data;
+                        form.val('add-form',ret);
+                    }
+                    form.render('select');
+                })
+            }else{
+                $('input[name=id]').val('');
+            }
+            layer.open({
+                title: '编辑管家信息',
+                type: 1,
+                area: ["600px", "400px"],
+                content: $('#add-form'),
+                btn: ['确定'],
+                success: function(layero,index){
+                    // form.render('select')
+                },
+                yes: function (index, layero) {
+                    var post = form.val('add-form')
+                    tool.ajaxPost('/mk/addTtMajordomoAction',post,function(re){
+                        layer.open({
+                            type: 1,
+                            title: false,
+                            closeBtn: 0,
+                            shadeClose: true,
+                            content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                            time: 2000,
+                            end:function(){
+                                if(re.state == true){
+                                    window.location.reload();
+                                }
+                            }
+                        });
+                    });
+                },
+                cancel: function(index, layero){ 
+                    
+                } 
+            });
+        }
+
+       
+
+    });
+</script>
+<{include file="../public/foot.html"}>

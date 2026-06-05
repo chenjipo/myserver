@@ -1,0 +1,78 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-label{width:200px;}
+.my-layui-form .layui-input-block {
+    margin-left: 208px;
+}
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">* 类型：</label>
+                    <div class="layui-input-block">
+                        <input type="radio" name="type" lay-filter="type" value="device_id" title="sdk设备ID" checked>
+                        <input type="radio" name="type" lay-filter="type" value="ip" title="客户端IP">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">* 黑名单：</label>
+                    <div class="layui-input-block">
+                      <textarea name="config_tpl" placeholder="" class="layui-textarea"></textarea>
+                    </div>
+                    <div class="layui-input-block">
+                        <div style="color:burlywood">一行一个配置，换行分割！</div>
+                    </div>
+                </div>
+               
+                <div class="layui-form-item">
+                    <label class="layui-form-label"></label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm"  lay-submit lay-filter="commit"> 保 存 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['tool','form'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var tool = layui.tool;
+
+    //监听提交
+    form.on('submit(commit)', function(data){
+        tool.ajaxPost('/optManage/addSdkBlackNameAction',form.val('filter-form'),function(re){
+            // console.log(re);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 0,
+                shadeClose: true,
+                content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time: 2000,
+                end:function(){
+                    if(re.state == true){
+                        closeLayer()
+                        parent.window.location.reload();
+                    }
+                }
+            });
+        },'json');
+        return false;
+    });
+
+    $('#closeBtn').on('click',function(){
+        closeLayer()
+    });
+
+    function closeLayer(){
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index); //再执行关闭
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

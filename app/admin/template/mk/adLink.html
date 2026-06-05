@@ -1,0 +1,303 @@
+<{include file="../public/head.html"}>
+<style>
+    .layui-table-cell {
+        height: auto ;
+        white-space: normal;
+        word-wrap:break-word;
+    }
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select name="pid" lay-search="" lay-filter="pid">
+                            <option value="">选择联运商</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select name="gid" lay-search="" lay-filter="gid">
+                            <option value="">选择游戏</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select name="cid" lay-search="" lay-filter="cid">
+                            <option value="">选择渠道</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select name="cpnid" lay-search="" lay-filter="cpnid">
+                            <option value="">选择主体</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select name="accid" lay-search="" lay-filter="accid">
+                            <option value="">选择投放账户</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select name="pitid" lay-search="" lay-filter="pitid">
+                            <option value="">选择投放人员</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="linkid" value="" placeholder="推广链ID">
+                    </div>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="lname" value="" placeholder="推广链名称">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline layui-btn-group" style="width:300px;">
+                        <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 筛 选 </button>
+                        <button type="submit" class="layui-btn layui-btn-sm layui-btn-normal js-add"> 打媒体推广链 </button>
+                        <button type="submit" class="layui-btn layui-btn-sm layui-btn-normal js-add-partner"> 打联运推广链接 </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="info">查看</a>
+                    <!-- <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a> -->
+                    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>关闭</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+
+<script>
+layui.use(['tool','table'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var table = layui.table;
+    var tool = layui.tool;
+
+    var pids = tool.getPartnerOption();
+    var gids = tool.getGameOption();
+    var cids = tool.getChannelOption();
+    var accids = tool.getAdAccountOption()
+    var cpnids = tool.getCompanyOption();
+    var pitids = tool.getPitcherOption()
+
+    table.render({
+        elem: '#my-table'
+        ,size: 'sm'
+        ,url:'/mk/getAdLinkList'
+        ,cols: [[
+            {field:'linkid', title: '推广链ID',width:80}
+            ,{field:'lname', title: '推广链名称',width:200,event: 'setLName'}
+            ,{field:'pid_txt', title: '联运商',align:'center',width:100}
+            ,{field:'gid_txt', title: '游戏',align:'center',width:100}
+            ,{field:'cid_txt', title: '渠道',width:100}
+            ,{field:'pkg', title: '渠道包标识',width:160}
+            ,{field:'accid_txt', title: '投放账户',width:200}
+            ,{field:'pitid_txt', title: '投放人员',width:100}
+            ,{field:'atime',  title: '创建时间',width:150}
+            ,{field:'mtime', title: '修改时间',width:150}
+            ,{title:'操作', align:'center', fixed:'right',width:200, toolbar: '#my-operate'}
+        ]]
+        ,page: {
+            layout: ['prev', 'page', 'next', 'skip' ,'count']
+            ,limit:20
+        }
+        ,parseData: function(res){
+            var list = res.data.list;
+            if(list != undefined && list.length>0){
+                for(var i=0;i<list.length;i++){
+                    list[i].atime =  tool.toDateString(list[i].atime);
+                    list[i].pid_txt = pids[list[i].pid] && pids[list[i].pid]['pname']
+                    list[i].gid_txt = gids[list[i].gid] && gids[list[i].gid]['gname']
+                    list[i].cid_txt = cids[list[i].cid] && cids[list[i].cid]['cname']
+                    list[i].accid_txt = accids[list[i].accid] && accids[list[i].accid]['accname']
+                    list[i].pitid_txt = pitids[list[i].pitid] && pitids[list[i].pitid]['pitname']
+                    if(list[i].apptype == 1){
+                        list[i].gid_txt = '<i style="color:#006633" class="layui-icon layui-icon-android"></i>'+list[i].gid_txt
+                    }else if (list[i].apptype == 2){
+                        list[i].gid_txt = '<i style="color:grey" class="layui-icon layui-icon-ios"></i>'+list[i].gid_txt
+                    }else if (list[i].apptype == 3){
+                        list[i].gid_txt = '<i style="" class="layui-icon layui-icon-login-wechat"></i>'+list[i].gid_txt
+                    }
+                }
+            }
+            return {
+                "code": 0,
+                'msg': "获取数据成功！",
+                "count": res.data.total,
+                "data": res.data.list
+            }
+        }
+        ,done: function(res, curr, count){
+
+        }
+    });
+
+    //监听搜索
+    form.on('submit(filter-search)', function(data){
+        var field = data.field;
+        //执行重载
+        table.reload('my-table', {
+            where: field
+        });
+    });
+
+    //监听工具条
+    table.on('tool(filter-table)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'del'){
+            // return layer.msg('暂不支持删除！')
+            layer.confirm('真的关闭么', function(index){
+                del(data);
+                obj.del();
+                layer.close(index);
+            });
+        } else if(obj.event === 'edit'){
+            // add(data);
+        } else if(obj.event === 'info'){
+            showInfo(data)
+        } else if(obj.event === 'setLName'){
+            layer.prompt({
+                formType: 2
+                ,title: '修改推广链ID为 ['+ data.linkid +'] 的名称'
+                ,value: data.lname
+            }, function(value, index){
+                layer.close(index);
+                //这里一般是发送修改的Ajax请求
+                updateAdLNameAction(data.linkid,value)
+                //同步更新表格和缓存对应的值
+                obj.update({
+                    lname: value
+                });
+            });
+        }
+    });
+
+    // 添加APP按钮
+    $(".js-add").click(function(){
+        add();
+    })
+
+    // 添加APP按钮
+    $(".js-add-partner").click(function(){
+        addPartner();
+    })
+
+    function updateAdLNameAction(linkid,lname){
+        tool.ajaxPost('/mk/updateAdLNameAction',{linkid:linkid,lname:lname},function(re){
+            // console.log(re)
+            // layer.open({
+            //     type: 1,
+            //     title:false,
+            //     closeBtn: 0,
+            //     shadeClose: true,
+            //     content:'<p style="margin:15px 30px;">'+re.msg+'</p>',
+            //     time:1000,
+            // });
+        },'json');
+    }
+
+    function add(edit){
+        var api = "/mk/addAdLinkPage";
+        var txt = "添加";
+        if(edit){
+            api += "?id="+edit.linkid;
+            txt = "编辑"
+        }
+        var index = layui.layer.open({
+            title: txt,
+            type: 2,
+            area: ["1px", "1px"],
+            content: api
+        })
+        layui.layer.full(index);
+        $(window).on("resize",function(){
+            layui.layer.full(index);
+        })
+    }
+
+    function addPartner(edit){
+        var api = "/mk/addAdLinkPartnerPage";
+        var txt = "添加";
+        if(edit){
+            api += "?id="+edit.linkid;
+            txt = "编辑"
+        }
+        var index = layui.layer.open({
+            title: txt,
+            type: 2,
+            area: ["1px", "1px"],
+            content: api
+        })
+        layui.layer.full(index);
+        $(window).on("resize",function(){
+            layui.layer.full(index);
+        })
+    }
+
+    function del(data){
+        // console.log(data);
+        var id = data.linkid;
+        tool.ajaxPost('/mk/deleteAdLinkAction',{'id':id},function(re){
+            // console.log(re)
+            layer.open({
+                type: 1,
+                title:false,
+                closeBtn: 0,
+                shadeClose: true,
+                content:'<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time:1000,
+            });
+        },'json');
+    }
+
+    function showInfo(data){
+        var data = data || {}
+
+        var content = '<div class="layui-fluid" id="show-info">'
+            content += '<div class="layui-card">'
+            content += '<div class="layui-card-body my-card">'
+            content += '<table class="layui-table" id="info-table" lay-filter="filter-table2"></table>'
+            content += '</div>'
+            content += '</div>'
+            content += '</div>'
+
+        layer.open({
+            type: 1,
+            // r表示right,b表示bottom
+            offset: 'rb',
+            // 标题
+            title: '详细信息',
+            //
+            // anim 特效 0-平滑放大 1-从上掉落 2-从底部往上滑入 3-从左滑入 4-从左翻转 5-渐显 6-抖动
+            anim: 2,
+            // 第一个参数宽度，第二个参数高度
+            area: ['688px', '100%'],
+            // 内容区 在body中写入<div id="draw">。。。。</div>代码，即弹窗内容
+            content: content,
+            success: function(){
+                var list = data.info_list || []
+                table.render({
+                    elem: '#info-table'
+                    ,cols: [[ //标题栏
+                    {field: 'info_key', title: '名称',width:150}
+                    ,{field: 'info_value', title: '值'}
+                    ]]
+                    ,data: list
+                });
+            }
+        })
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

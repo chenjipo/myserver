@@ -1,0 +1,250 @@
+<{include file="../public/head.html"}>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select id="gid" name="gid" lay-search="" lay-filter="gid">
+                            <option value="">请选择游戏</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select id="cid" name="cid" lay-search="" lay-filter="cid">
+                            <option value="">请选择渠道</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 检查版本 </button>
+                    <button type="submit" class="layui-btn layui-btn-sm layui-btn-normal js-add"> 添加新版本 </button>
+                </div>
+            </div>
+
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="upload-mubao"><i class="layui-icon layui-icon-upload-drag"></i>母包</a>
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="update-split-package"><i class="layui-icon layui-icon-refresh-1"></i>分包</a>
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="analysis"><i class="layui-icon layui-icon-edit"></i>解析结果</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<form class="layui-form sdk-dev-form" style="display:none;" lay-filter="filter-sdk-version-form" id="android-sdk-version-select">
+    <div class="layui-form-item">
+        <div id="picker" style="display:none;"></div>
+    </div>
+</form>
+<link rel="stylesheet" type="text/css" href="/static/lib/webuploader/webuploader.css">
+<script type="text/javascript" src="/static/lib/jquery/jQuery-2.2.0.min.js"></script>
+<script type="text/javascript" src="/static/lib/webuploader/webuploader.js"></script>
+<script>
+layui.use(['tool','table'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var table = layui.table;
+    var tool = layui.tool;
+
+    tool.getGameOption({apptype:1});
+    tool.getChannelOption({pid:1});
+
+    function renderTable(gid,cid){
+        table.render({
+            elem: '#my-table'
+            ,size: 'sm'
+            ,url:'/platform/getGameChannelMPkgList?gid='+gid+'&cid='+cid
+            ,cols: [[
+                {field:'version', title: '母包版本',width:100}
+                ,{field:'status_txt',  title: '状态',width:210}
+                ,{field:'size',  title: '大小'}
+                ,{field:'sdk_version',  title: 'sdk版本'}
+                ,{field:'atime',  title: '创建时间',width:150}
+                ,{field:'mtime',  title: '修改时间',width:150}
+                ,{title:'操作', fixed: 'right', width:260, align:'center', toolbar: '#my-operate'}
+            ]]
+            ,parseData: function(res){
+                var list = res.data.list;
+                if(list != undefined && list.length>0){
+                    for(var i=0;i<list.length;i++){
+                        list[i].status_txt =  '<span style="color:gray;">等待上传</span>';
+                        if(list[i].status == 1){
+                            list[i].status_txt =  '<span style="color:red;">解析失败</span>';
+                        }
+                        if(list[i].status == 2){
+                            list[i].status_txt =  '<span style="color:green;">解析成功</span> - '+tool.toDateString(list[i].uploadtime);
+                        }
+                        list[i].atime =  tool.toDateString(list[i].atime);
+                    }
+                }
+                return {
+                    "code": 0,
+                    'msg': "获取数据成功！",
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            }
+            ,done: function(res, curr, count){
+
+            }
+        });
+    }
+
+    //监听搜索
+    form.on('submit(filter-search)', function(data){
+        var field = data.field;
+        renderTable(field.gid,field.cid)
+    });
+
+    //监听工具条
+    table.on('tool(filter-table)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'edit'){
+            add(data);
+        }  else if(obj.event === 'update-split-package'){
+            layer.confirm('确认更新分包吗？', function(index){
+                updateSplitPackage(data);
+                layer.close(index);
+            });
+        }  else if(obj.event ==='upload-mubao'){
+            openUploadMubaoForm(data)
+        } else if (obj.event === 'analysis'){
+            analysis(data)
+        }
+    });
+
+    // 添加APP按钮
+    $(".js-add").click(function(){
+        add();
+    })
+
+    function add(edit){
+        var api = "/platform/addGameChannelMpkgPage";
+        var txt = "添加";
+        if(edit){
+            api += "?id="+edit.id;
+            txt = "编辑"
+        }
+        var index = layui.layer.open({
+            title: txt,
+            type: 2,
+            area: ["1px", "1px"],
+            content: api
+        })
+        layui.layer.full(index);
+        $(window).on("resize",function(){
+            layui.layer.full(index);
+        })
+    }
+
+    function updateSplitPackage(data){
+        var gid = data.gid;
+        var cid = data.cid;
+        $.post('/platform/updateSplitPackageAction',{'gid':gid,'cid':cid},function(re){
+            // console.log(re)
+            layer.open({
+                type: 1,
+                title:false,
+                closeBtn: 0,
+                shadeClose: true,
+                content:'<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time:1000,
+            });
+        },'json');
+    }
+
+    function openUploadMubaoForm(data){
+        var uploader = WebUploader.create({
+            auto: true,
+            swf: '/static/lib/webuploader/Uploader.swf',
+            server: '/platform/uploadApk?gid='+data.gid+'&cid='+data.cid+'&version='+data.version,
+            pick: '#picker',
+            resize: false,
+            chunked:true,
+            fileVal:'apk',
+            threads:1
+        });
+        uploader.on( 'uploadProgress', function( file, percentage ) {
+            if($('#upload-result').length > 0){
+                $('#upload-result').text((parseInt(percentage * 10000)/100) + '%');
+            }else{
+                layer.alert('0%', {
+                    content:`<div id="upload-result"></div>`,
+                    skin: 'layui-layer-lan' //样式类名
+                    ,closeBtn: 0,
+                    title:'上传中'
+                });
+            }
+        });
+        uploader.on( 'uploadSuccess', function( file,ret ) {
+            if(ret.state){
+                layer.alert('上传成功', {
+                    skin: 'layui-layer-lan', //样式类名
+                    title:'上传结果',
+                    end: function(){ 
+                        window.location.reload()
+                    }   
+                });
+            }else{
+                layer.alert(ret.msg, {
+                    skin: 'layui-layer-lan', //样式类名
+                    title:'上传结果',
+                    end: function(){ 
+                        window.location.reload()
+                    }  
+                });
+            }
+        });
+        console.log('母包上传')
+        layer.open({
+            title: '安卓母包上传',
+            type: 1,
+            area: ["300px", "200px"],
+            content: $('#android-sdk-version-select'),
+            btn: ['选择母包'],
+            success: function(layero,index){
+                $('select[name=sdk_version]').val('');
+                form.render('select')
+            },
+            yes: function (index, layero) {
+                var val = form.val('filter-sdk-version-form')
+                var sdk_version = val.sdk_version
+                // if(!sdk_version){
+                //     layer.msg('请选择sdk版本')
+                //     return
+                // }
+                $('#picker').find('input[type=file]').click()
+                layer.close(index);
+            },
+            cancel: function(index, layero){ 
+                window.location.reload()
+            } 
+        });
+    }
+
+    // 添加APP应用
+    function analysis(data){
+        var api = "/platform/gameChannelMPkgAnalysisPage?id="+data.id;
+        var txt = "详情";
+        var index = layui.layer.open({
+            title: txt,
+            type: 2,
+            area: ["1px", "1px"],
+            content: api
+        })
+        layui.layer.full(index);
+        $(window).on("resize",function(){
+            layui.layer.full(index);
+        })
+    }
+
+
+});
+</script>
+<{include file="../public/foot.html"}>

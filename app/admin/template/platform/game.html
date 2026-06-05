@@ -1,0 +1,185 @@
+<{include file="../public/head.html"}>
+<style>
+    .layui-table-view .layui-table-body .layui-table[lay-size=sm] .layui-table-cell{
+        height:46px;
+        line-height: 46px;
+    }
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select id="mgid" name="mgid" lay-search="">
+                            <option value="">请选择主游戏</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="gid" value="" placeholder="gid">
+                    </div>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="gname" value="" placeholder="游戏名称">
+                    </div>
+                </div>
+
+                <div class="layui-inline layui-btn-group">
+                    <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 筛 选 </button>
+                    <button type="submit" class="layui-btn layui-btn-sm layui-btn-normal js-add"> 添 加 </button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit">编辑</a>
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="payway">配置金流</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['tool','table'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var table = layui.table;
+    var tool = layui.tool;
+
+    var tmp_mgid = 0
+
+    tool.ajaxGetSync('/platform/getMgameOption',function(result){
+        if(result.state){
+            var list = result.data
+            var select = $('select[name=mgid]');
+            for(var i in list){
+                var selected = ''
+                if(tmp_mgid == 0) {
+                    selected = 'selected'
+                    tmp_mgid = list[i]['mgid']
+                }
+                select.append('<option value="'+list[i]['mgid']+'" '+selected+'> ['+list[i]['mgid']+ ']-'+list[i]['mgname']+'</option>');
+            }
+            form.render('select');
+        }
+    })
+
+    table.render({
+        elem: '#my-table'
+        ,size: 'sm'
+        ,url:'/platform/getGameList?mgid='+tmp_mgid
+        ,cols: [[
+            {field:'icon_txt', title: 'ICON'}
+            ,{field:'gid', title: 'GID'}
+            ,{field:'gname_txt', title: '游戏名称', width: 200}
+            ,{field:'dpgn', title: '英文名'}
+            ,{field:'screen_txt', title: '屏幕'}
+            // ,{field:'sort', title: '排序'}
+            ,{field:'atime',  title: '创建时间', width: 150}
+            ,{field:'mtime', title: '修改时间', width: 150}
+            ,{title:'操作', fixed: 'right', width:200, align:'center', toolbar: '#my-operate'}
+        ]]
+        ,page: {
+            layout: ['prev', 'page', 'next', 'skip' ,'count']
+            ,limit:10
+        }
+        ,parseData: function(res){
+            var list = res.data.list;
+            if(list != undefined && list.length>0){
+                for(var i=0;i<list.length;i++){
+                    // if(list[i].csdk_type != '无'){
+                    //     list[i].gname_txt = list[i].gname + ' <span class="layui-badge">'+list[i].csdk_type+'</span>'
+                    // }else{
+                    //     list[i].gname_txt = list[i].gname
+                    // }
+                    list[i].gname_txt = list[i].gname
+                    if(list[i].apptype == 1){
+                        list[i].gname_txt = '<i style="color:#006633" class="layui-icon layui-icon-android"></i>' +list[i].gname_txt
+                    }else if (list[i].apptype == 2){
+                        list[i].gname_txt = '<i style="color:grey" class="layui-icon layui-icon-ios"></i>' + list[i].gname_txt
+                    }else if (list[i].apptype == 3){
+                        
+                        list[i].gname_txt = '<i style="" class="layui-icon layui-icon-login-wechat"></i>' + list[i].gname_txt
+
+                    }
+                    list[i].icon_txt = '<img src="'+list[i].icon+'" style="width:auto;height:45px;">';
+                   
+                    list[i].screen_txt = list[i].screen == 1 ? '竖屏':'横屏';
+                    list[i].atime =  tool.toDateString(list[i].atime);
+                }
+            }
+            return {
+                "code": 0,
+                'msg': "获取数据成功！",
+                "count": res.data.total,
+                "data": res.data.list
+            }
+        }
+        ,done: function(res, curr, count){
+
+        }
+    });
+
+    //监听搜索
+    form.on('submit(filter-search)', function(data){
+        var field = data.field;
+        //执行重载
+        table.reload('my-table', {
+            where: field
+        });
+    });
+
+    //监听工具条
+    table.on('tool(filter-table)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'edit'){
+            add(data);
+        } else if(obj.event === 'payway'){
+            payway(data)
+        }
+    });
+
+    // 添加APP按钮
+    $(".js-add").click(function(){
+        add();
+    })
+
+    function payway(data){
+        var api = "/platform/gamePaywayPage?gid="+data.gid;
+        var txt = "配置金流渠道【"+data.gid+"】";
+        var index = layui.layer.open({
+            title: txt,
+            type: 2,
+            area: ["1px", "1px"],
+            content: api
+        })
+        layui.layer.full(index);
+        $(window).on("resize",function(){
+            layui.layer.full(index);
+        })
+    }
+
+    // 添加APP应用
+    function add(edit){
+        var api = "/platform/addGamePage";
+        var txt = "添加";
+        if(edit){
+            api += "?gid="+edit.gid;
+            txt = "编辑"
+        }
+        var index = layui.layer.open({
+            title: txt,
+            type: 2,
+            area: ["1px", "1px"],
+            content: api
+        })
+        layui.layer.full(index);
+        $(window).on("resize",function(){
+            layui.layer.full(index);
+        })
+    }
+
+});
+</script>
+<{include file="../public/foot.html"}>

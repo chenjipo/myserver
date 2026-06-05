@@ -1,0 +1,100 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-label{width:200px;}
+/*icon上传按钮*/
+.btn-file {position: relative; overflow: hidden;}
+.btn-file input[type=file] {position: absolute; top: 0; right: 0; min-width: 100%; min-height: 100%; font-size: 100px; text-align: right; filter: alpha(opacity = 0); opacity: 0; outline: none; background: white; cursor: inherit; display: block;}
+.layui-form-item .layui-input-inline {width: 300px;}
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                <input type="hidden" name="mgid" value="" />
+                <div class="layui-form-item">
+                    <label class="layui-form-label">主游戏名称</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="mgname" value="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">联系客服</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="contacts" value="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">联系方式</label>
+                    <div class="layui-input-inline">
+                        <input type="radio" name="contacts_type" lay-filter="contacts_type" value="1" title="QQ">
+                        <input type="radio" name="contacts_type" lay-filter="contacts_type" value="2" title="公众号" >
+                        <input type="radio" name="contacts_type" lay-filter="contacts_type" value="3" title="企业微信" >
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">排序</label>
+                    <div class="layui-input-inline" style="width: 180px">
+                        <input type="text" class="layui-input" name="sort"  value="" placeholder="填写数字越大，位置显示越前">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label"></label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm"  lay-submit lay-filter="commit"> 保 存 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['form','tool'], function(){
+    console.log(layui)
+    var form = layui.form;
+    var tool = layui.tool;
+    var mgid = tool.getQueryString('mgid') || '';
+    var $ = layui.$;
+
+    if(Number(mgid)>0){
+        tool.ajaxGet('/platform/getMgameInfo?mgid='+mgid, function(result){
+            if(result.state){
+                form.val('filter-form',result.data);
+            }
+        })
+    }
+
+    //监听提交
+    form.on('submit(commit)', function(data){
+        tool.ajaxPost('/platform/addMgameAction',form.val('filter-form'),function(re){
+            // console.log(re);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 0,
+                shadeClose: true,
+                content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time: 2000,
+                end:function(){
+                    if(re.state == true){
+                        closeLayer()
+                        parent.window.location.reload();
+                    }
+                }
+            });
+        },'json');
+        return false;
+    });
+    
+
+    $('#closeBtn').on('click',function(){
+        closeLayer()
+    });
+
+    function closeLayer(){
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index); //再执行关闭
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

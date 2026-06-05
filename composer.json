@@ -1,0 +1,26 @@
+{
+    "name": "ttt/manage_admin",
+    "description": "manage",
+    "authors": [
+        {
+            "name": "Fanweiting",
+            "email": "fanweiting@qq.com"
+        }
+    ],
+    "require": {
+        "php": "^7.2",
+        "smarty/smarty": "^3.1",
+        "millionmile/get_env": "^1.0",
+        "alipaysdk/easysdk": "^2.0",
+        "google/apiclient": "^1.1"
+    },
+    "autoload":{
+        "psr-4":{
+            "App\\":"app/",
+            "YXLib\\":"lib/"
+        }
+    },
+    "config": {
+        "secure-http": true
+    }
+}

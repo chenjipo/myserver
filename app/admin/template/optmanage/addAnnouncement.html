@@ -1,0 +1,125 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-label{width:200px;}
+.my-layui-form .layui-input-block {
+    margin-left: 208px;
+}
+</style>
+<div class="layui-fluid">
+    <div class="layui-card" style="min-height: 700px;">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                <input type="hidden" name="id" value="" />
+                <div class="layui-form-item">
+                    <label class="layui-form-label">* 开始时间：</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" readonly name="start_time" id="start_time"  value="" placeholder="yyyy-MM-dd HH:mm:ss">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">* 结束时间：</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" readonly name="end_time" id="end_time" value="" placeholder="yyyy-MM-dd HH:mm:ss">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">几秒后关闭：</label>
+                    <div class="layui-input-inline">
+                        <input type="number" class="layui-input"  name="close_second"  value="" placeholder="单位秒，填整数。">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">* 公告标题：</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="title" value="">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">* 公告内容：</label>
+                    <div class="layui-input-block">
+                      <textarea name="content" placeholder="" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">* 开启对象：</label>
+                    <div class="layui-input-block">
+                      <textarea name="mapkey" placeholder="mgid_gid_dtype" class="layui-textarea"></textarea>
+                    </div>
+                    <div class="layui-input-block">
+                        <div style="color:burlywood">一行一个配置，格式mgid_gid_dtype，即主游戏ID_子游戏ID_设备类型，其中mgid,gid,dtype可以设置为星号'*'，代表全部。</div>
+                    </div>
+                </div>
+               
+                <div class="layui-form-item">
+                    <label class="layui-form-label"></label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm"  lay-submit lay-filter="commit"> 保 存 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['index','laydate','tool','form'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var tool = layui.tool;
+    var laydate = layui.laydate;
+
+    var id = tool.getQueryString('id') || '';
+
+    if(Number(id)>0){
+        tool.ajaxGet('/optManage/getAnnouncementInfo?id='+id, function(result){
+            if(result.state){
+                result.data.start_time = tool.toDateString(result.data.start_time);
+                result.data.end_time = tool.toDateString(result.data.end_time);
+                form.val('filter-form',result.data);
+            }else{
+                layer.msg(re.msg);
+            }
+        });
+        form.render();
+    }
+
+    laydate.render({
+        elem: '#start_time'
+        ,type: 'datetime'
+    });
+
+    laydate.render({
+        elem: '#end_time'
+        ,type: 'datetime'
+    });
+
+    //监听提交
+    form.on('submit(commit)', function(data){
+        tool.ajaxPost('/optManage/addAnnouncementAction',form.val('filter-form'),function(re){
+            // console.log(re);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: true,
+                shadeClose: true,
+                content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time: 5000,
+                end:function(){
+                    
+                }
+            });
+        },'json');
+        return false;
+    });
+
+    $('#closeBtn').on('click',function(){
+        closeLayer()
+    });
+
+    function closeLayer(){
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index); //再执行关闭
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

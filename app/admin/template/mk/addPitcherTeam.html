@@ -1,0 +1,166 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-label{width:200px;}
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                <input type="hidden" name="teamid" value="" />
+                <div class="layui-form-item">
+                    <label class="layui-form-label">分组名称</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="teamname" value="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">排序</label>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="sort" value="100">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label for="" class="layui-form-label">分配代理</label>
+                    <div class="layui-input-block">
+                        <div id="agent-transfer">请联系主管先添加代理</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label for="" class="layui-form-label">分配主体</label>
+                    <div class="layui-input-block">
+                        <div id="company-transfer">请联系主管先添加主体</div>
+                    </div>
+                </div>
+                
+                <div class="layui-form-item">
+                    <label class="layui-form-label"></label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm"  lay-submit lay-filter="commit"> 保 存 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['transfer','tool','form'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var tool = layui.tool;
+    var transfer = layui.transfer;
+    var id = tool.getQueryString('id') || '';
+
+    function renderAgentTransfer(data,value){
+        var data = data || []
+        var value = value || []
+        transfer.render({
+            elem: '#agent-transfer'
+            ,id:'agent'
+            ,title: ['可授分配代理', '已分配代理']  //自定义标题
+            ,data: data
+            //,width: 150 //定义宽度
+            ,height: 210 //定义高度
+            ,value: value
+            ,showSearch: true
+        })
+    }
+
+    function renderCompanyTransfer(data,value){
+        var data = data || []
+        var value = value || []
+        transfer.render({
+            elem: '#company-transfer'
+            ,id:'company'
+            ,title: ['可授分配主体', '已分配主体']  //自定义标题
+            ,data: data
+            //,width: 150 //定义宽度
+            ,height: 310 //定义高度
+            ,value: value
+            ,showSearch: true
+        })
+    }
+
+    var agentValue = [],companyValue = []
+    if(Number(id)>0){
+        tool.ajaxGetSync('/mk/getPitcherTeamInfo?id='+id, function(result){
+            if(result.state){
+                if(result.data.agtids){
+                    agentValue = result.data.agtids
+                }
+                if(result.data.cpnids){
+                    companyValue = result.data.cpnids
+                }
+                form.val('filter-form',result.data);
+            }else{
+                layer.msg(re.msg);
+            }
+        });
+        form.render();
+    }
+
+    tool.ajaxGet('/mk/getAgentOptionNoAuth/',function(result){
+        if(result.state){
+            if(result.data.length>0){
+                var data = []
+                result.data.forEach(element => {
+                    data.push({title:element.agtid+'-'+element.agtname,value:element.agtid})
+                });
+                console.log(agentValue)
+                
+                renderAgentTransfer(data,agentValue)
+            }
+        }
+    });
+
+    tool.ajaxGet('/mk/getCompanyOptionNoAuth/',function(result){
+        if(result.state){
+            if(result.data.length>0){
+                var data = []
+                result.data.forEach(element => {
+                    data.push({title:element.cpnid+'-'+element.cpnname,value:element.cpnid})
+                });
+                console.log(companyValue)
+                renderCompanyTransfer(data,companyValue)
+            }
+        }
+    });
+
+    //监听提交
+    form.on('submit(commit)', function(data){
+        var agtids = transfer.getData('agent');
+        var cpnids = transfer.getData('company');
+        var data = form.val('filter-form')
+        data.agtids = agtids
+        data.cpnids = cpnids
+        tool.ajaxPost('/mk/addPitcherTeamAction',data,function(re){
+            // console.log(re);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 0,
+                shadeClose: true,
+                content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time: 2000,
+                end:function(){
+                    if(re.state == true){
+                        closeLayer()
+                        parent.window.location.reload();
+                    }
+                }
+            });
+        },'json');
+        return false;
+    });
+
+    $('#closeBtn').on('click',function(){
+        closeLayer()
+    });
+
+    function closeLayer(){
+        var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+        parent.layer.close(index); //再执行关闭
+    }
+});
+</script>
+<{include file="../public/foot.html"}>

@@ -1,0 +1,96 @@
+<{include file="../public/head.html"}>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <form class="layui-form my-layui-form layui-card-body" lay-filter="filter-form">
+                <div class="layui-form-item">
+                    <label for="" class="layui-form-label">权限ID：</label>
+                    <div class="layui-form-mid" id="id"> </div>
+                </div>
+                <div class="layui-form-item">
+                    <label for="" class="layui-form-label">权限名称：</label>
+                    <div class="layui-form-mid" id="name"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label for="" class="layui-form-label">授权对象</label>
+                    <div class="layui-input-block">
+                        <div id="permission-tree"></div>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-sm" lay-submit lay-filter="commit"> 保 存 </button>
+                        <button type="button" id="closeBtn" class="layui-btn layui-btn-normal layui-btn-sm"> 取 消 </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+    <script type="text/javascript">
+        layui.use(['layer','tool','form','tree'],function () {
+            var $ = layui.jquery;
+            var layer = layui.layer;
+            var form = layui.form;
+            var tree = layui.tree;
+            var tool = layui.tool;
+            var id = tool.getQueryString('id');
+            //渲染
+
+            tool.ajaxGet('/admin/getMkAuthorityTree/?id='+id,function(result){
+                if(result.state){
+                    $('#id').html(result.data.info.id)
+                    $('#name').html(result.data.info.name)
+                    renderTree(result.data.list)
+                }
+            });
+
+            function renderTree(data){
+                var data = data || {}
+                var inst1 = tree.render({
+                    elem: '#permission-tree'  //绑定元素
+                    ,showLine: false
+                    ,showCheckbox: true
+                    ,data: data
+                    ,id:'treeid'
+                });
+            }
+
+            //监听提交
+            form.on('submit(commit)', function(data){
+                var permission = tree.getChecked('treeid')
+                tool.ajaxPost('/admin/mkAuthorityEmpowerAction',{id:id,permission:permission},function(re){
+                    // console.log(re);
+                    layer.open({
+                        type: 1,
+                        title: false,
+                        closeBtn: 0,
+                        shadeClose: true,
+                        content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                        time: 2000,
+                        end:function(){
+                            if(re.state == true){
+                                closeLayer()
+                                parent.window.location.reload();
+                            }
+                        }
+                    });
+                });
+                return false;
+            });
+
+            $('#closeBtn').on('click',function(){
+                var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+                parent.layer.close(index); //再执行关闭
+            });
+
+            function closeLayer(){
+                var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+                parent.layer.close(index); //再执行关闭
+            }
+            
+        })
+    </script>
+
+

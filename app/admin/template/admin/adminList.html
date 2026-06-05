@@ -1,0 +1,160 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-switch {
+    position: relative;
+    height: 17px;
+    line-height: 17px;
+}
+.layui-form-switch i {
+    width: 10px;
+    height: 10px;
+} 
+
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">用户帐号</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="user" class="layui-input searchVal" placeholder="" />
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 筛 选 </button>
+                    <button type="submit" class="layui-btn layui-btn-sm layui-btn-normal js-add"> 添 加 </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="switchTpl">
+                <input type="checkbox" class="layui-btn-xs" name="state" value="{{d.admin_id}}" lay-skin="switch" lay-text="正常|禁用" lay-filter="state" {{ d.state == 0 ? 'checked' : '' }}>
+            </script>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+                    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['tool','table'], function(){
+        var $ = layui.$
+            ,form = layui.form
+            ,table = layui.table
+            ,tool = layui.tool
+
+        table.render({
+            elem: '#my-table'
+            ,url:'/admin/getAdminList/'
+            ,size: 'sm'
+            //,cellMinWidth: 60
+            //,height: 'full-120'
+            ,cols: [[
+                {field:'admin_id',  title: 'ID', width: 100}
+                ,{field:'user', title: '用户帐号',width: 100}
+                ,{field:'nick', title: '用户名称',width: 100}
+                ,{field:'phone', title: '手机号',width: 150}
+                ,{field:'last_lt',  title: '最后登录时间', width: 180, templet: function(d){
+                    return tool.toDateString(d.last_lt)
+                }}
+                ,{field:'last_ip',  title: '最后登录ip',width: 100}
+                ,{field:'state', title: '状态', templet: '#switchTpl', width: 100, unresize: true}
+                ,{title: '操作', fixed: 'right', width:170, align:'center', toolbar: '#my-operate'}
+            ]]
+            ,page: {
+                layout: [ 'prev', 'page', 'next', 'skip' ,'count']
+                ,limit:15
+            }
+            ,parseData: function(res){
+                return {
+                    "code": 0,
+                    'msg': "获取数据成功！",
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            }
+        });
+
+         //监听状态操作
+        form.on('switch(state)', function(obj){
+            var state;
+            if(!obj.elem.checked){
+                //禁用
+                state = 2
+            }else{
+                state = 1
+            }
+            tool.ajaxPost('/admin/updateAdminStatusAction/',{'admin_id':this.value,'state':state},function(re){
+                layer.msg(re.msg)
+            });
+            //layer.tips(this.value + ' '+obj.elem.checked , obj.othis);
+        });
+
+        //监听搜索
+        form.on('submit(filter-search)', function(data){
+            var field = data.field;
+            //执行重载
+            table.reload('my-table', {
+                where: field
+            });
+        });
+
+        //监听工具条
+        table.on('tool(filter-table)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'del'){
+                layer.confirm('真的删除么', function(index){
+                    delUser(data);
+                    obj.del();
+                    layer.close(index);
+                });
+            } else if(obj.event === 'edit'){
+                addUser(data);
+            }
+        });
+
+        //添加
+        function addUser(edit){
+            var api = "/admin/addAdminPage/";
+            if(edit){
+                api += "?id="+edit.admin_id;
+            }
+            var index = layui.layer.open({
+                title : "添加用户",
+                type : 2,
+                area: ["1px", "1px"],
+                content : api
+            })
+            layui.layer.full(index);
+            $(window).on("resize",function(){
+                layui.layer.full(index);
+            })
+        }
+
+        $(".js-add").click(function(){
+            addUser();
+        })
+
+        function delUser(edit){
+            var admin_id = edit.admin_id;
+            tool.ajaxPost('/admin/deleteAdminAction/',{'id':admin_id},function(re){
+                layer.open({
+                    type: 1,
+                    title:false,
+                    closeBtn: 0,
+                    shadeClose: true,
+                    content:'<p style="margin:15px 30px;">'+re.msg+'</p>',
+                    time:1000,
+                });
+            });
+        }
+
+    });
+</script>
+<{include file="../public/foot.html"}>

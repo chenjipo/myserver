@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>登入 - 后台</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="/static/layui_2.6.8/css/layui.css?v=1" media="all">
+    <link rel="stylesheet" href="/static/style/admin.css" media="all">
+    <link rel="stylesheet" href="/static/style/login.css" media="all">
+</head>
+<body style="background: url(/static/style/res/web_login_bg.jpg) no-repeat center;background-size:cover;  ">
+    <div class="layadmin-user-login layadmin-user-display-show" id="LAY-user-login" style="display: none;">
+        <div class="layadmin-user-login-main">
+            <div class="layadmin-user-login-box layadmin-user-login-header">
+                <h2>管理后台</h2>
+            </div>
+            <div class="layadmin-user-login-box layadmin-user-login-body layui-form">
+                <div class="layui-form-item">
+                    <label class="layadmin-user-login-icon layui-icon layui-icon-username"></label>
+                    <input type="text" name="username" id="LAY-user-login-username" onkeydown="return mykeydown(event)" lay-verify="required" placeholder="用户名" class="layui-input">
+                </div>
+                <div class="layui-form-item">
+                    <label class="layadmin-user-login-icon layui-icon layui-icon-password"></label>
+                    <input type="password" name="password" id="LAY-user-login-password" onkeydown="return mykeydown(event)" lay-verify="required" placeholder="密码" class="layui-input">
+                </div>
+                <{if $isNeedCaptcha }>
+                <div class="layui-form-item">
+                    <div class="layui-row">
+                        <div class="layui-col-xs7">
+                            <label class="layadmin-user-login-icon layui-icon layui-icon-vercode"></label>
+                            <input type="text" name="code" id="LAY-user-login-vercode" onkeydown="return mykeydown(event)" lay-verify="required" placeholder="图形验证码" class="layui-input">
+                        </div>
+                        <div class="layui-col-xs5">
+                        <div style="margin-left: 10px;">
+                            <img id="code" src="/login/captcha/" onclick="this.src='/login/captcha/?r='+Math.random();" class="layadmin-user-login-codeimg">
+                        </div>
+                        </div>
+                    </div>
+                </div>
+                <{/if}>
+                <div class="layui-form-item">
+                    <input type="button" class="layui-btn layui-btn-fluid" lay-submit lay-filter="LAY-user-login-submit" value="登 陆" />
+                </div>
+                <!--
+                <div class="layui-form-item" style="text-align: right;">
+                    <input type="checkbox" name="keep" value="on" lay-skin="primary" title="记住我" checked>
+                </div>
+                -->
+            </div>
+        </div>
+  
+        <div class="layui-trans layadmin-user-login-footer">
+            <p>© 2022 管理后台</p>
+        </div>
+    </div>
+    <script src="/static/layui_2.6.8/layui.js"></script>
+    <script>
+    layui.use(['jquery','form'], function(){
+        var form = layui.form
+        var $ = layui.jquery
+
+        window.mykeydown = function(){
+
+        }
+        //监听提交
+        form.on('submit(LAY-user-login-submit)', function(data){
+            $.post('/login/loginAction/',data.field,function(re){
+                // console.log(re);
+                layer.open({
+                    type: 1,
+                    title: false,
+                    closeBtn: 0,
+                    shadeClose: true,
+                    content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                    time: 2000,
+                    end:function(){
+                        if(re.data && re.data.direct){
+                            window.location.href = re.data.direct;
+                        }
+                    }
+                });
+            },'json');
+            return false;
+        });
+        
+    });
+    </script>
+</body>

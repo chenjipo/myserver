@@ -1,0 +1,100 @@
+<{include file="../public/head.html"}>
+<style>
+.layui-form-item .layui-input-inline {width: 160px;}
+</style>
+<div class="layui-fluid">
+     
+    <div class="layui-card">
+        <div class="layui-card-body my-card">
+            <div>
+                <pre class="layui-code">
+//名称来源于方法上面的注释，格式必须双斜杠才会被自动获取
+class admin {
+    //获取用户信息
+    public funciton getUserInfo(){
+
+    }
+    //获取用户列表数据
+    public funciton getUserList(){
+
+    }
+}
+                </pre>  
+            </div>
+                 
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>添加</a>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<script>
+
+    layui.use(['tool','index', 'table','code'], function(){
+        var $ = layui.$;
+        var form = layui.form;
+        var table = layui.table;
+
+        layui.code({
+            title:'php类'
+        });
+
+        table.render({
+            elem: '#my-table'
+            ,size: 'sm'
+            ,url:'/admin/autoGetNavList'
+            // ,cellMinWidth: 60
+            // ,height: 'full-100'
+            ,cols: [[
+                {field:'route', title: '路由',width:300}
+                ,{field:'name', title: '名称',width:300}
+                ,{title: '操作', align:'center', width:200,toolbar: '#my-operate'}
+            ]]
+            ,parseData: function(res){
+                // console.log(res)
+                var list = res.data.list;
+                return {
+                    "code": 0,
+                    'msg': "获取数据成功！",
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            }
+            ,done: function(res, curr, count){
+
+            }
+        });
+        //监听工具条
+        table.on('tool(filter-table)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'edit'){
+                add(data);
+            }
+        });
+        // 添加渠道按钮
+        $(".js-add").click(function(){
+            add();
+        })
+
+        // 添加
+        function add(edit){
+            var api = "/admin/addMenuPage/?route="+edit.route+"&name="+edit.name;
+            var txt = "添加";
+            var index = layui.layer.open({
+                title: txt,
+                type: 2,
+                area: ["1px", "1px"],
+                content: api
+            })
+            layui.layer.full(index);
+            $(window).on("resize",function(){
+                layui.layer.full(index);
+            })
+        }
+
+    });
+</script>
+<{include file="../public/foot.html"}>

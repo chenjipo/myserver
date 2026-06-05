@@ -1,0 +1,202 @@
+<{include file="../public/head.html"}>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto my-layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline" id="form_date"></div>
+                    <div class="layui-input-inline">
+                        <select name="pid" lay-search="" lay-filter="pid">
+                            <option value="">选择联运商</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select id="mgid" name="mgid" lay-search="">
+                            <option value="">请选择主游戏</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select name="gid" lay-search="" lay-filter="gid">
+                            <option value="">选择游戏</option>
+                        </select>
+                    </div>
+                    
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <select name="cid" lay-search="" lay-filter="cid">
+                            <option value="">选择渠道</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="uid" value="" placeholder="uid">
+                    </div>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="ptno" value="" placeholder="平台订单">
+                    </div>
+                    <div class="layui-input-inline">
+                        <input type="text" class="layui-input" name="cpno" value="" placeholder="研发订单">
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button type="submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="filter-search"> 筛 选 </button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body my-card">
+            <table class="layui-table" id="my-table" lay-filter="filter-table"></table>
+            <script type="text/html" id="my-operate">
+                <div class="layui-btn-group">
+                    <button href="javascript:" class="order_log layui-btn layui-btn-primary layui-btn-xs" lay-event="log">获取日志</button>
+                    {{# if(d.ispay==2 && d.isnotify==0){ }}
+                        <button href="javascript:" class="layui-btn layui-btn-primary layui-btn-xs send" lay-event="send">手动发放</button>
+                    {{# } }}
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['tool','table'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    var table = layui.table;
+    var tool = layui.tool;
+
+    var mgids = tool.getMGameOption()
+    var gids = tool.getGameOption()
+    var pids = tool.getPartnerOption()
+    var cids = tool.getChannelOption();
+
+    var date8,date1;
+    var timestamp8,timestamp1;
+    var today = new Date()
+    timestamp8 = today.getTime()-86400000*7;
+    timestamp1 = today.getTime();
+
+    date8 = tool.toDateString(timestamp8,'yyyy-MM-dd')
+    date1 = tool.toDateString(timestamp1,'yyyy-MM-dd')
+    tool.renderBetweenDate({elem: 'form_date',name: 'date',value:date8+' - '+date1})
+
+    table.render({
+        elem: '#my-table'
+        ,size: 'sm'
+        ,cellMinWidth:100
+        ,url:'/optManage/getOrderList'
+        ,cols: [[
+            {field:'atime',  title: '创建时间',width:150}
+            ,{field:'pid_txt', title: '联运商'}
+            ,{field:'mgid_txt', title: '主游戏'}
+            ,{field:'gid_txt', title: '子游戏',width:120}
+            ,{field:'cid_txt', title: '推广渠道'}
+            ,{field:'ptno', title: '平台订单',width:200}
+            ,{field:'cpno', title: 'CP订单',width:200}
+            ,{field:'thno', title: '渠道订单',width:200}
+            ,{field:'uid', title: '用户ID'}
+            ,{field:'uname', title: '用户账号'}
+            ,{field:'fee_txt', title: '订单金额'}
+            ,{field:'dfee_txt', title: '折扣金额'}
+            ,{field:'paytype_txt', title: '支付方式'}
+            ,{field:'sid_txt', title: '游戏服'}
+            ,{field:'rid_txt', title: '角色'}
+            ,{field:'rlevel', title: '充值时等级'}
+            ,{field:'ispay_txt', title: '支付状态'}
+            ,{field:'paytime', title: '支付时间',width:150}
+            ,{title:'操作', width:200, align:'center', toolbar: '#my-operate'}
+        ]]
+        ,page: {
+            layout: ['prev', 'page', 'next', 'skip' ,'count']
+            ,limit:20
+        }
+        ,parseData: function(res){
+            var list = res.data.list;
+            var paytype = res.data.paytype;
+            var paystatus = res.data.paystatus;
+            if(list != undefined && list.length>0){
+                for(var i=0;i<list.length;i++){
+                    list[i].pid_txt = pids[list[i].pid] && list[i].pid +'-'+ pids[list[i].pid]['pname']
+                    list[i].mgid_txt = mgids[list[i].mgid] && list[i].mgid +'-'+ mgids[list[i].mgid]['mgname']
+                    list[i].gid_txt = gids[list[i].gid] && list[i].gid +'-'+ gids[list[i].gid]['gname']
+                    list[i].cid_txt = cids[list[i].cid] && list[i].cid +'-'+ cids[list[i].cid]['cname']
+                    list[i].sid_txt = list[i].sid
+                    list[i].fee_txt = tool.keepTwoDecimalFull(list[i].fee/100)
+                    list[i].dfee_txt = tool.keepTwoDecimalFull(list[i].dfee/100)
+                    list[i].rid_txt = '['+list[i].rid+']-'+list[i].rname
+                    list[i].paytype_txt = paytype[list[i].paytype] ? paytype[list[i].paytype]:'未知'
+                    list[i].ispay_txt = paystatus[list[i].ispay] ? paystatus[list[i].ispay]:'未知'
+                    list[i].atime =  tool.toDateString(list[i].atime);
+                    list[i].paytime =  list[i].paytime>0 ? tool.toDateString(list[i].paytime):'-';
+                }
+            }
+            return {
+                "code": 0,
+                'msg': "获取数据成功！",
+                "count": res.data.total,
+                "data": res.data.list
+            }
+        }
+        ,done: function(res, curr, count){
+
+        }
+    });
+
+    //监听搜索
+    form.on('submit(filter-search)', function(data){
+        var field = data.field;
+        //执行重载
+        table.reload('my-table', {
+            where: field
+        });
+    });
+
+    //监听工具条
+    table.on('tool(filter-table)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'log'){
+            funs.log.call(data)
+        } else if(obj.event === 'send'){
+            funs.send.call(data)
+        } 
+    });
+
+    var funs = {
+        log : function(){
+            tool.ajaxGetSync('/optManage/getOrderLog?ptno='+this.ptno,function(result){
+                if(result.state && result.data){
+                    var width = parseInt($('body').width() * 0.6);
+                    var height = parseInt($('body').height() * 0.8);
+                    layer.open({
+                        type: 1,
+                        title: '订单日志',
+                        shadeClose: true,
+                        shade: false,
+                        maxmin: true, //开启最大化最小化按钮
+                        area: [width+'px', height+'px'],
+                        content: '<div style="padding:10px;word-break: break-all;word-wrap: break-word">' + result.data.content + '</div>'
+                    });
+                }
+            })
+        },
+        send: function(){
+            tool.ajaxPost('/optManage/orderHandSend/',{ptno:this.ptno},function(re){
+            // console.log(re);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 0,
+                shadeClose: true,
+                content: '<p style="margin:15px 30px;">'+re.msg+'</p>',
+                time: 2000,
+                end:function(){
+                    
+                }
+            });
+        },'json');
+        }
+    }
+  
+});
+</script>
+<{include file="../public/foot.html"}>
