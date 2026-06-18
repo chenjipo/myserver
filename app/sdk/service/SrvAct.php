@@ -71,40 +71,39 @@ class SrvAct
 			'uversion' => '1.0.1'
 		]; 
 
-		if ($data['appid'] == 100003 && version_compare($data['version'], '1.0.12', '<')) { 
+		if ($data['appid'] == 100003 && version_compare($data['version'], '1.0.14', '<')) { 
 			$checkPkgUp = [
-				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/slinglauncher/SlingLauncher_v1.0.12.apk',
+				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/slinglauncher/SlingLauncher_v1.0.14.apk',
 				'utype'    => 2,//1可关闭更新，2强制更新
 				'uct'      => 'Update',
-				'uversion' => '1.0.12'
+				'uversion' => '1.0.14'
 			];
 		}
 
-		//if ($data['mac'] == 'E076D0C7CF6E' && $data['appid'] == 100003 && version_compare($data['version'], '1.0.12', '<')) { 
+		//if ($data['mac'] == 'E076D0C7CF0D' && $data['appid'] == 100003 && version_compare($data['version'], '1.0.15', '<')) { 
 		//     $checkPkgUp = [
-		//         'uurl'     => 'https://ustv.s3.us-west-1.amazonaws.com/applist/slinglauncher/SlingLauncher_v1.0.12.apk',
+		//         'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/slinglauncher/SlingLauncher_v1.0.15_test.apk',
 		//         'utype'    => 2,//1可关闭更新，2强制更新
 		//         'uct'      => 'Update',
-		//         'uversion' => '1.0.12'
+		//         'uversion' => '1.0.15'
 		//     ];
 		// }
 
-		if ($data['mac'] == 'E076D0C7CF6E' && $data['appid'] == 100007 && version_compare($data['version'], '1.0.16', '<')) { 
-			$checkPkgUp = [
-				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/MyTv_1.0.16_v2.apk',
-				'utype'    => 2,//1可关闭更新，2强制更新
-				'uct'      => 'Update',
-				'uversion' => '1.0.16'
-			];
-		}
+		//if ($data['mac'] == 'E076D0C7CF6E' && $data['appid'] == 100007 && version_compare($data['version'], '1.0.18', '<')) { 
+		//	$checkPkgUp = [
+		//		'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/MyTv_1.0.18_v2.apk',
+		//		'utype'    => 2,//1可关闭更新，2强制更新
+		//		'uct'      => 'Update',
+		//		'uversion' => '1.0.18'
+		//	];
+		//}
 
-		 if ($data['appid'] == 100007 && version_compare($data['version'], '1.0.16', '<')) { 
+		 if ($data['appid'] == 100007 && version_compare($data['version'], '1.0.18', '<')) { 
 			$checkPkgUp = [
-				// 'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/MyTv_1.0.3_v2.apk',
-				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/MyTv_1.0.16_v2.apk',
+				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/MyTv_1.0.18_v2.apk',
 				'utype'    => 2,//1可关闭更新，2强制更新
 				'uct'      => 'Update',
-				'uversion' => '1.0.16'
+				'uversion' => '1.0.18'
 			];
 		}
 
@@ -126,50 +125,50 @@ class SrvAct
 		//     ];
 		// }
 
-		if ($data['appid'] == 100001 && version_compare($data['version'], '1.0.6','<')) {
+		if ($data['appid'] == 100001 && version_compare($data['version'], '1.0.8','<')) {
 			$checkPkgUp = [
-				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/AppStore_1.0.6.apk',
+				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/AppStore_1.0.8.apk',
 				'utype'    => 2,//1可关闭更新，2强制更新
 				'uct'      => 'Update',
-				'uversion' => '1.0.6'
+				'uversion' => '1.0.8'
 			];
 		}
 
-		//if ($data['mac'] == 'E076D0C7CF6E' && $data['appid'] == 100001 && version_compare($data['version'], '1.0.6','<')) {
+		//if ($data['mac'] == 'E076D0C7CF0D' && $data['appid'] == 100001 && version_compare($data['version'], '1.0.8','<')) {
 		//	$checkPkgUp = [
-		//		'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/AppStore_1.0.6.apk',
+		//		'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/AppStore_1.0.8.apk',
 		//		'utype'    => 2,//1可关闭更新，2强制更新
 		//		'uct'      => 'Update',
-		//		'uversion' => '1.0.6'
+		//		'uversion' => '1.0.8'
 		//	];
 		//}
 
-		if ($data['mac'] == 'E076D0C7CF6E' && $data['appid'] == 100003 && version_compare($data['version'], '1.0.11','<')) {
+		//if ($data['mac'] == 'E076D0C7CF6E' && $data['appid'] == 100003 && version_compare($data['version'], '1.0.11','<')) {
+		//	$checkPkgUp = [
+		//		'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/slinglauncher/SlingLauncher_v1.0.11.apk',
+		//		'utype'    => 2,//1可关闭更新，2强制更新
+		//		'uct'      => 'Update',
+		//		'uversion' => '1.0.11'
+		//	];
+		//}
+
+		 if ($data['appid'] == 100008 && version_compare($data['version'], '1.0.3','<')) {
 			$checkPkgUp = [
-				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/slinglauncher/SlingLauncher_v1.0.11.apk',
+				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/My18Tv_1.0.3_v2.apk',
 				'utype'    => 2,//1可关闭更新，2强制更新
 				'uct'      => 'Update',
-				'uversion' => '1.0.11'
+				'uversion' => '1.0.3'
 			];
 		}
 
-		 if ($data['appid'] == 100008 && version_compare($data['version'], '1.0.2','<')) {
-			$checkPkgUp = [
-				'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/My18Tv_1.0.2_v2.apk',
-				'utype'    => 2,//1可关闭更新，2强制更新
-				'uct'      => 'Update',
-				'uversion' => '1.0.2'
-			];
-		}
-
-		// if ($data['appid'] == 100007 && version_compare($data['version'], '1.0.3','<')) {
+		//if ($data['mac'] == 'E076D0C7CF6E' && $data['appid'] == 100008 && version_compare($data['version'], '1.0.3','<')) {
 		//     $checkPkgUp = [
-		//         'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/mytv/my-tv-v1.0.2.apk',
+		//         'uurl'     => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/My18Tv_1.0.3_v2.apk',
 		//         'utype'    => 2,//1可关闭更新，2强制更新
 		//         'uct'      => 'Update',
-		//         'uversion' => '1.0.2'
+		//         'uversion' => '1.0.3'
 		//     ];
-		// }
+		//}
 		
 		###获取邀请码
 		$invite = $duid;
@@ -325,10 +324,11 @@ class SrvAct
 		$result = [
 			['name' => 'MyPlayer', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyPlayer/MyPlayer_110.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyPlayer/ic_launcher.png', 'bid' => 'com.drama.simpleplayer'],
 			// ['name' => 'Player', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Player/player_v2.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Player/ic_launcher.png', 'bid' => 'com.mediaon.apt'],
-			['name' => 'appstore', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/AppStore_1.0.5.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/ic_logo.png', 'bid' => 'com.dt.appstore'],
-			['name' => 'MyTv', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/MyTv_1.0.16_v2.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/logo.png', 'bid' => 'com.dt.slingtv'],
-			['name' => 'MyTv-Adult', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/My18Tv_1.0.1_v2.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/logo2.png', 'bid' => 'com.dt.my18tv'],
+			['name' => 'appstore', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/AppStore_1.0.8.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/ic_logo.png', 'bid' => 'com.dt.appstore'],
+			['name' => 'MyTv', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/MyTv_1.0.18_v2.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/logo.png', 'bid' => 'com.dt.slingtv'],
+			['name' => 'MyTv-Adult', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/My18Tv_1.0.3_v2.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/logo2.png', 'bid' => 'com.dt.my18tv'],
 			// ['name' => 'MyVod', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Movie/MyVod_203.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Movie/ic_launcher.png', 'bid' => 'com.tv.hdobox'],
+			['name' => 'CinemaHQ', 'downurl' => 'https://ustv.s3.us-west-1.amazonaws.com/applist/CinemaHQ/CinemaHQ.apk', 'icon' => 'https://ustv.s3.us-west-1.amazonaws.com/applist/CinemaHQ/logo.png', 'bid' => 'com.app.mlounge'],
 			['name' => 'Onstream', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Onstream/onstream.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Onstream/logo.png', 'bid' => 'com.maertsno.tv'],
 			['name' => 'BeeTv', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/BeeTv/BeeTV.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/BeeTv/logo.png', 'bid' => 'com.bweather.forecast'],
 			// ['name' => 'DisneyNow', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Disney/disneynow-10-42-0-100.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Disney/logo.png', 'bid' => 'com.disney.datg.videoplatforms.android.watchdc'],

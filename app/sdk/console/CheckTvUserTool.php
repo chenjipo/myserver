@@ -4,6 +4,7 @@ namespace App\sdk\console;
 
 use App\common\DeviceServer;
 use App\common\TvTool;
+use App\common\TvUserPool;
 use App\sdk\model\Xuser;
 use YXLib\foundation\ModelFactory;
 use App\common\SdkQueue;
@@ -98,46 +99,69 @@ class CheckTvUserTool
         //     // $xuser->updateUinfo($row['uid'], array('is_clear' => 0));
         // }
         // exit;
-        $limitNum = 5;
+        $limitNum = TvUserPool::LIMIT_NUM;
 
         if ($queueLength < $limitNum) {
-            echo "队列补充账号ing\n";
-            $needNum = $limitNum - $queueLength;
-            // $sql = "select a.id,a.uid,a.uname,a.upwd,a.yexpired from x_user a left join x_mac_user_map b on a.id=b.userid where a.is_push=0 and a.is_online=0 and a.status=1 and a.ystatus=1 and a.is_clear=0 and a.lastonline+600<={$time} and b.macid is null order by a.lastonline asc limit {$needNum}";
-            $sql = "select a.id,a.uid,a.uname,a.upwd,a.yexpired from x_user a left join x_mac_user_map b on a.id=b.userid where a.is_push=0 and a.is_online=0 and a.status=1 and a.ystatus=1 and a.yexpired-86400>={$time} and a.is_clear=0 and b.macid is null order by a.lastonline asc limit {$needNum}";
-            // echo $sql;
-            // exit;
-            // echo $sql;
-            $list = $model->query($sql);
-
-            if (!empty($list)) {
-                $success = 0;
-                foreach ($list as $row) {
-                    $xxx = SdkQueue::push('pre_xuser', [
-                        'id'         => $row['id'],
-                        'uid'        => $row['uid'],
-                        'uname'      => $row['uname'],
-                        'upwd'       => $row['upwd'],
-                        'expired'    => $row['yexpired'],
-                        ]
-                    );
-                    $json = json_encode([
-                        'id'         => $row['id'],
-                        'uid'        => $row['uid'],
-                        'uname'      => $row['uname'],
-                        'upwd'       => $row['upwd'],
-                        'expired'    => $row['yexpired'],
-                        ]);
-                    echo $json . "\n";
-                    // if (!empty($xxx)) {
-                        $success++;
-                        $xuser->updateUinfo($row['uid'], array('is_push' => 1));
-                    // }
+            $lockFile = ROOT . '/runtime/locks/check_tv_user_tool.lock';
+            $lockDir = dirname($lockFile);
+            if (!is_dir($lockDir)) {
+                mkdir($lockDir, 0777, true);
+            }
+            $fp = fopen($lockFile, 'c+');
+            if ($fp === false || !flock($fp, LOCK_EX | LOCK_NB)) {
+                echo "CheckTvUserTool: queue refill skipped, another instance is running\n";
+                if ($fp !== false) {
+                    fclose($fp);
                 }
             } else {
-                $message = "\n当前队列账号数量:{$queueLength},已不足{$limitNum}个,需补充{$needNum}个\n没有可用的账号库存,请联系技术管理员!";
-                $monitorArr = ['title' => 'player业务告警通知', 'message' => $message];
-                //Queue::push('monitor', $monitorArr); 
+            try {
+                $queueLength = SdkQueue::glength('pre_xuser');
+                if ($queueLength >= $limitNum) {
+                    echo "CheckTvUserTool: queue already refilled, skip\n";
+                } else {
+                echo "队列补充账号ing\n";
+                $needNum = $limitNum - $queueLength;
+                $sql = "select a.id,a.uid,a.uname,a.upwd,a.yexpired from x_user a left join x_mac_user_map b on a.id=b.userid where a.is_push=0 and a.is_online=0 and a.status=1 and a.ystatus=1 and a.yexpired-86400>={$time} and a.is_clear=0 and b.macid is null order by a.lastonline asc limit {$needNum}";
+                $list = $model->query($sql);
+
+                if (!empty($list)) {
+                    $success = 0;
+                    $failed = 0;
+                    foreach ($list as $row) {
+                        $pushed = SdkQueue::push('pre_xuser', [
+                            'id'         => $row['id'],
+                            'uid'        => $row['uid'],
+                            'uname'      => $row['uname'],
+                            'upwd'       => $row['upwd'],
+                            'expired'    => $row['yexpired'],
+                        ]);
+                        $json = json_encode([
+                            'id'         => $row['id'],
+                            'uid'        => $row['uid'],
+                            'uname'      => $row['uname'],
+                            'upwd'       => $row['upwd'],
+                            'expired'    => $row['yexpired'],
+                        ]);
+                        echo $json . "\n";
+                        if (!empty($pushed)) {
+                            $success++;
+                            $xuser->updateUinfo($row['uid'], array('is_push' => 1));
+                        } else {
+                            $failed++;
+                            echo "CheckTvUserTool: push failed, uid={$row['uid']}, is_push unchanged\n";
+                        }
+                    }
+                    echo "CheckTvUserTool: queue refill success={$success}, failed={$failed}\n";
+                } else {
+                    $message = "\n当前队列账号数量:{$queueLength},已不足{$limitNum}个,需补充{$needNum}个\n没有可用的账号库存,请联系技术管理员!";
+                    $monitorArr = ['title' => 'player业务告警通知', 'message' => $message];
+                    Queue::push('monitor', $monitorArr);
+                }
+                }
+            } finally {
+                flock($fp, LOCK_UN);
+                fclose($fp);
+            }
             }
         }
         
