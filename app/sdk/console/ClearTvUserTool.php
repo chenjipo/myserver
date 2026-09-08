@@ -60,7 +60,7 @@ class ClearTvUserTool
     {
         $time = time();
         $date = date("Y-m-d H:i:s");
-        $nextTime = strtotime(date('Ymd')) + 86400 * 10;
+        $nextTime = strtotime(date('Ymd')) + 86400 * 7;
         //清理账号(系统内部)
         $sql = "select a.id,a.uid,a.uname,a.lastonline,b.macid,b.atime,a.yexpired,a.is_online,a.lastonline from x_user a join x_mac_user_map b on a.id=b.userid where a.is_push=1 and a.status=1 and a.ystatus=1 and a.is_online=0";
         //清除过期的账号
@@ -83,7 +83,7 @@ class ClearTvUserTool
                     // break;
                     ###如果上次在线时间是15天前回收
                     // if (($row['lastonline'] + 1296000) < $time) {
-                    if (($row['lastonline'] + 864000) < $time) {
+                    if (($row['lastonline'] + 86400 * 7) < $time) {
                         $clear_success++;
                         // var_dump($row);
                         break;

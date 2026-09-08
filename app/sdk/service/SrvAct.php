@@ -213,8 +213,8 @@ class SrvAct
 		];
 
 		if ($data['appid'] == 100003) {
-			// $result['ad_msg'] = 'SlingTv Box exclusive Black Friday special discount — $50 off one unit, one time only!';
-			$result['ad_msg'] = "WhatsApp customer service number 1(646)-702-7901";
+			//$result['ad_msg'] = 'MyTv server is currently undergoing maintenance, and TV channels are unavailable. Please wait patiently for the maintenance to complete!';
+			$result['ad_msg'] = "Official website: https://slingtvbox.shop   WhatsApp service: 1(646)702-7901";
 			$result['wa_num'] = "+1(646)702-7901";
 			$result['em_addr'] = "support@slingtvbox.shop";
 			$result['web_addr'] = "https://slingtvbox.shop";
@@ -327,9 +327,9 @@ class SrvAct
 			['name' => 'appstore', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/AppStore_1.0.8.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/appstore/ic_logo.png', 'bid' => 'com.dt.appstore'],
 			['name' => 'MyTv', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/MyTv_1.0.18_v2.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/logo.png', 'bid' => 'com.dt.slingtv'],
 			['name' => 'MyTv-Adult', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/My18Tv_1.0.3_v2.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/MyTv/logo2.png', 'bid' => 'com.dt.my18tv'],
-			// ['name' => 'MyVod', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Movie/MyVod_203.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Movie/ic_launcher.png', 'bid' => 'com.tv.hdobox'],
+			['name' => 'MyVod', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Movie/MyVod_2.0.4.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Movie/ic_launcher.png', 'bid' => 'com.tv.hdobox'],
 			['name' => 'CinemaHQ', 'downurl' => 'https://ustv.s3.us-west-1.amazonaws.com/applist/CinemaHQ/CinemaHQ.apk', 'icon' => 'https://ustv.s3.us-west-1.amazonaws.com/applist/CinemaHQ/logo.png', 'bid' => 'com.app.mlounge'],
-			['name' => 'Onstream', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Onstream/onstream.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Onstream/logo.png', 'bid' => 'com.maertsno.tv'],
+			//['name' => 'Onstream', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Onstream/onstream.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Onstream/logo.png', 'bid' => 'com.maertsno.tv'],
 			['name' => 'BeeTv', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/BeeTv/BeeTV.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/BeeTv/logo.png', 'bid' => 'com.bweather.forecast'],
 			// ['name' => 'DisneyNow', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Disney/disneynow-10-42-0-100.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Disney/logo.png', 'bid' => 'com.disney.datg.videoplatforms.android.watchdc'],
 			['name' => 'Facebook', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/facebook/facebook.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/facebook/logo.png', 'bid' => 'com.facebook.katana'],
@@ -341,11 +341,12 @@ class SrvAct
 			['name' => 'youtube', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/youtube/youtube.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/youtube/logo.png', 'bid' => 'com.google.android.youtube.tv'],
 			['name' => 'ScreenRecord', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/ScreenRecord/screen-record.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/ScreenRecord/ic_launcher.png', 'bid' => 'com.kimcy929.screenrecorder'],
 			['name' => 'shadowsocksr', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/shadowsocksr/shadowsocksr.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/shadowsocksr/logo.png', 'bid' => 'com.bige0.shadowsocksr'],
-			['name' => 'v2rayNG', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/v2rayNG/v2rayNG_1.8.19.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/v2rayNG/logo.png', 'bid' => 'com.v2ray.ang'],
+			['name' => 'v2rayNG', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/v2rayNG/v2rayNG_1.10.26.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/v2rayNG/logo.png', 'bid' => 'com.v2ray.ang'],
 			['name' => 'NordVPN', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/NordVPN/NordVPN.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/NordVPN/logo.png', 'bid' => 'com.nordvpn.android'],
 			// ['name' => 'CinemaHD', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/CinemaHD/CinemaHD.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/CinemaHD/logo.png', 'bid' => 'com.yoku.marumovie'],
 			['name' => 'FilmPlus', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/FilmPlus/FilmPlus.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/FilmPlus/logo.png', 'bid' => 'com.guideplus.co'],
-			['name' => 'Surfshark', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Surfshark/Surfshark.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Surfshark/logo.png', 'bid' => 'com.surfshark.vpnclient.android']
+			['name' => 'Surfshark', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Surfshark/Surfshark.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/Surfshark/logo.png', 'bid' => 'com.surfshark.vpnclient.android'],
+			['name' => 'FlClash', 'downurl' => 'https://ustv.s3-accelerate.amazonaws.com/applist/FlClash/FlClash.apk', 'icon' => 'https://ustv.s3-accelerate.amazonaws.com/applist/FlClash/logo.webp', 'bid' => 'com.follow.clash']
 		];
 		return success($result, 'success');
 	}
@@ -393,7 +394,7 @@ class SrvAct
 		Debug::log($data);
 
 		// $jumUrl = "https://slingtvbox.shop/products/slingtv-box-s5-max-hot-";
-		$jumUrl = "https://slingtvbox.com/products/slingtv-box-s5-max-hot-";
+		$jumUrl = "https://slingtvbox.shop/products/slingtv-box-s5-max-hot-";
 		header("Location: {$jumUrl}");
 		exit;
 		echo '<html xmlns="http://www.w3.org/1999/xhtml"><head><meta property="og:title" content="123"/><meta property="og:image" content="http://image.llmaitengff.com/data/upload/gwpaylist/20240718/af31e5d3e2e54539afc77dee8bf3aa15.jpg"/><meta name="twitter:image" content="https://image.llmaitengff.com/data/upload/gwpaylist/20240718/af31e5d3e2e54539afc77dee8bf3aa15.jpg" /></head><body><iframe src="https://slingtvbox.com/products/slingtv-box-s5-max-hot-" width="100%" height="100%" frameborder="0" style="border: none;" sandbox="allow-same-origin allow-forms"></iframe></body>';

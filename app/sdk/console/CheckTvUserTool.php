@@ -12,6 +12,11 @@ use App\common\Queue;
 
 class CheckTvUserTool
 {
+    /** 队列入队要求：距过期至少剩余秒数 */
+    private const QUEUE_MIN_REMAIN_SECONDS = 86400;
+
+    /** 定时续费：距过期不足该秒数则续费 */
+    private const RENEW_THRESHOLD_SECONDS = 259200;
 
     public function handle($params)
     { 
@@ -121,8 +126,11 @@ class CheckTvUserTool
                 } else {
                 echo "队列补充账号ing\n";
                 $needNum = $limitNum - $queueLength;
-                $sql = "select a.id,a.uid,a.uname,a.upwd,a.yexpired from x_user a left join x_mac_user_map b on a.id=b.userid where a.is_push=0 and a.is_online=0 and a.status=1 and a.ystatus=1 and a.yexpired-86400>={$time} and a.is_clear=0 and b.macid is null order by a.lastonline asc limit {$needNum}";
-                $list = $model->query($sql);
+                $renewed = $this->renewIdlePoolExpiringUsers($model, $time);
+                if ($renewed > 0) {
+                    echo "CheckTvUserTool: renewed {$renewed} idle pool account(s) before queue refill\n";
+                }
+                $list = $this->fetchQueueCandidates($model, $time, $needNum);
 
                 if (!empty($list)) {
                     $success = 0;
@@ -172,32 +180,61 @@ class CheckTvUserTool
         ###每天03:35检查续费
         if (in_array($hourI, ["03:10", "12:10", "18:10"])) {
             echo "{$hourI}检查续费账号ing\n";
-            //检查需要续费的账号,并且在mac表里
-            $sql = "select a.uid,a.uname,a.upwd,a.yexpired from x_user a join x_mac_user_map b on a.id=b.userid where a.is_clear=0 and a.yexpired-259200<{$time}";
-            $list = $model->query($sql);
-            // var_dump(count($list));
-            // exit;
-            if (!empty($list)) {
-                $obj  = new TvTool();
-                $needXfNum = count($list);
-                $success = 0;
-                foreach ($list as $row) {
-                    $newData = array(
-                        'edit'     => $row['uid'],
-                        'username' => $row['uname'],
-                        'password' => $row['upwd'],
-                    );
-
-                    $res = $obj->xfUser($newData);
-                    if (true === $res) {
-                        $success++;
-                    }
-                }
-                $message = "共{$needXfNum}个需要续费,已成功续费{$success}个账号";
+            $boundRenewed = $this->renewBoundExpiringUsers($model, $time);
+            $idleRenewed = $this->renewIdlePoolExpiringUsers($model, $time, self::RENEW_THRESHOLD_SECONDS);
+            $success = $boundRenewed + $idleRenewed;
+            if ($success > 0) {
+                $message = "定时续费: 已绑定账号{$boundRenewed}个, 空闲池账号{$idleRenewed}个, 共成功续费{$success}个";
                 echo $message;
                 $monitorArr = ['title' => 'player业务通知', 'message' => $message];
-                Queue::push('monitor', $monitorArr); 
+                Queue::push('monitor', $monitorArr);
             }
         }
+    }
+
+    private function fetchQueueCandidates($model, $time, $needNum)
+    {
+        $minRemain = self::QUEUE_MIN_REMAIN_SECONDS;
+        $sql = "select a.id,a.uid,a.uname,a.upwd,a.yexpired from x_user a left join x_mac_user_map b on a.id=b.userid where a.is_push=0 and a.is_online=0 and a.status=1 and a.ystatus=1 and a.yexpired-{$minRemain}>={$time} and a.is_clear=0 and b.macid is null order by a.lastonline asc limit {$needNum}";
+        return $model->query($sql);
+    }
+
+    private function renewIdlePoolExpiringUsers($model, $time, $thresholdSeconds = self::QUEUE_MIN_REMAIN_SECONDS)
+    {
+        $sql = "select a.uid,a.uname,a.upwd,a.yexpired from x_user a left join x_mac_user_map b on a.id=b.userid where a.is_push=0 and a.is_online=0 and a.status=1 and a.ystatus=1 and a.is_clear=0 and b.macid is null and a.yexpired-{$thresholdSeconds}<{$time}";
+        return $this->executeRenewUsers($model, $sql);
+    }
+
+    private function renewBoundExpiringUsers($model, $time)
+    {
+        $thresholdSeconds = self::RENEW_THRESHOLD_SECONDS;
+        $sql = "select a.uid,a.uname,a.upwd,a.yexpired from x_user a join x_mac_user_map b on a.id=b.userid where a.is_clear=0 and a.yexpired-{$thresholdSeconds}<{$time}";
+        return $this->executeRenewUsers($model, $sql);
+    }
+
+    private function executeRenewUsers($model, $sql)
+    {
+        $list = $model->query($sql);
+        if (empty($list)) {
+            return 0;
+        }
+        $obj = new TvTool();
+        $success = 0;
+        foreach ($list as $row) {
+            $newData = array(
+                'edit'     => $row['uid'],
+                'username' => $row['uname'],
+                'password' => $row['upwd'],
+            );
+            $res = $obj->xfUser($newData);
+            if (true === $res) {
+                $success++;
+            }
+        }
+        if ($success > 0) {
+            $getTvUserTool = new GetTvUserTool();
+            $getTvUserTool->handle([]);
+        }
+        return $success;
     }
 }
