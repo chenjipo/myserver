@@ -21,7 +21,7 @@ class PopAddUserData
                 if ($json) {
                     $gpc = json_decode($json, true);
                     $inventory = TvUserPool::getInventory();
-                    $limitNum = TvUserPool::LIMIT_NUM;
+                    $limitNum = TvUserPool::REPLENISH_LIMIT;
                     echo "PopAddUserData: dbPool={$inventory['dbPool']}, queue={$inventory['queue']}, available={$inventory['available']}, limit={$limitNum}\n";
                     if ($inventory['available'] >= $limitNum) {
                         echo "PopAddUserData: inventory sufficient, skip register\n";

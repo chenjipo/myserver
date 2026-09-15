@@ -12,9 +12,6 @@ use App\common\Queue;
 
 class CheckTvUserTool
 {
-    /** 队列入队要求：距过期至少剩余秒数 */
-    private const QUEUE_MIN_REMAIN_SECONDS = 86400;
-
     /** 定时续费：距过期不足该秒数则续费 */
     private const RENEW_THRESHOLD_SECONDS = 259200;
 
@@ -38,15 +35,16 @@ class CheckTvUserTool
 
         $allNum = $kcNum = $zxNum = $macNum = $macActiveNum = $macBlackNum = 0;
         $balance = $allUser = $onlineUser = 0;
-        // ###检查账号队列库存
-        $queueLength = SdkQueue::glength('pre_xuser');
+        // ###检查账号队列库存（可用库存与入队同口径）
+        $inventory = TvUserPool::getInventory();
+        $queueLength = $inventory['queue'];
+        $kcNum = $inventory['dbPool'];
 
-        ###检查可用账号库存
-        $sql = "select count(1) as allNum,count(if(is_push=0,1,null)) as kcNum,count(if(is_online=1,1,null)) as zxNum from x_user where status=1 and ystatus=1 and is_clear=0";
+        ###检查有效/在线账号
+        $sql = "select count(1) as allNum,count(if(is_online=1,1,null)) as zxNum from x_user where status=1 and ystatus=1 and is_clear=0";
         $hasInfo = $model->getOne($sql);
         if (!empty($hasInfo)) {
             $allNum = (int)$hasInfo['allNum'];
-            $kcNum  = (int)$hasInfo['kcNum'];
             $zxNum  = (int)$hasInfo['zxNum'];
         }
 
@@ -194,13 +192,16 @@ class CheckTvUserTool
 
     private function fetchQueueCandidates($model, $time, $needNum)
     {
-        $minRemain = self::QUEUE_MIN_REMAIN_SECONDS;
+        $minRemain = TvUserPool::QUEUE_MIN_REMAIN_SECONDS;
         $sql = "select a.id,a.uid,a.uname,a.upwd,a.yexpired from x_user a left join x_mac_user_map b on a.id=b.userid where a.is_push=0 and a.is_online=0 and a.status=1 and a.ystatus=1 and a.yexpired-{$minRemain}>={$time} and a.is_clear=0 and b.macid is null order by a.lastonline asc limit {$needNum}";
         return $model->query($sql);
     }
 
-    private function renewIdlePoolExpiringUsers($model, $time, $thresholdSeconds = self::QUEUE_MIN_REMAIN_SECONDS)
+    private function renewIdlePoolExpiringUsers($model, $time, $thresholdSeconds = null)
     {
+        if ($thresholdSeconds === null) {
+            $thresholdSeconds = TvUserPool::QUEUE_MIN_REMAIN_SECONDS;
+        }
         $sql = "select a.uid,a.uname,a.upwd,a.yexpired from x_user a left join x_mac_user_map b on a.id=b.userid where a.is_push=0 and a.is_online=0 and a.status=1 and a.ystatus=1 and a.is_clear=0 and b.macid is null and a.yexpired-{$thresholdSeconds}<{$time}";
         return $this->executeRenewUsers($model, $sql);
     }

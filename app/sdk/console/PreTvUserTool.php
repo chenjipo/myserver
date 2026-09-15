@@ -32,7 +32,7 @@ class PreTvUserTool
             $dbPoolNum = $inventory['dbPool'];
             $queueLength = $inventory['queue'];
             $availableNum = $inventory['available'];
-            $limitNum = TvUserPool::LIMIT_NUM;
+            $limitNum = TvUserPool::REPLENISH_LIMIT;
             echo "PreTvUserTool: dbPool={$dbPoolNum}, queue={$queueLength}, available={$availableNum}, limit={$limitNum}\n";
             if ($availableNum >= $limitNum) {
                 echo "PreTvUserTool: inventory sufficient, skip\n";
@@ -63,7 +63,7 @@ class PreTvUserTool
                 file_put_contents($cooldownFile, (string)time());
                 $getTvUserTool = new GetTvUserTool();
                 $getTvUserTool->handle([]);
-                $message = "可用库存(队列{$queueLength}+空闲池{$dbPoolNum})共{$availableNum}个,不足{$limitNum}个,已补充{$success}个账号";
+                $message = "可用库存(队列{$queueLength}+可入队空闲池{$dbPoolNum})共{$availableNum}个,不足{$limitNum}个,已补充{$success}个账号";
                 $monitorArr = ['title' => 'player空闲账号库存通知', 'message' => $message];
                 Queue::push('monitor', $monitorArr);
             }
