@@ -170,6 +170,7 @@ Class TvTool
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         $response = curl_exec($ch);
+        $curlErr = curl_error($ch);
         curl_close($ch);
         if (!empty($response)) {
             $jsonArr = @json_decode($response, true);
@@ -177,6 +178,10 @@ Class TvTool
                 return true;
             }
         }
+        $uid = isset($newData['edit']) ? $newData['edit'] : '';
+        $uname = isset($newData['username']) ? $newData['username'] : '';
+        $logLine = date('Y-m-d H:i:s') . "\tuid={$uid}\tuname={$uname}\tcurl_err={$curlErr}\tresponse=" . substr((string)$response, 0, 1000) . "\n";
+        @file_put_contents(ROOT . '/runtime/logs/tv_xfuser_fail.log', $logLine, FILE_APPEND);
         return false;
     }
 

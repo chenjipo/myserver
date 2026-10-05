@@ -15,6 +15,9 @@ class CheckTvUserTool
     /** 定时续费：距过期不足该秒数则续费 */
     private const RENEW_THRESHOLD_SECONDS = 259200;
 
+    /** 续费失败后冷却，避免同一账号被 cron 反复续费扣款 */
+    private const RENEW_FAIL_COOLDOWN_SECONDS = 86400;
+
     public function handle($params)
     { 
         $is_get_data = false;
@@ -221,7 +224,16 @@ class CheckTvUserTool
         }
         $obj = new TvTool();
         $success = 0;
+        $failed = 0;
+        $skipped = 0;
+        $failNotify = [];
         foreach ($list as $row) {
+            $uid = (string)$row['uid'];
+            if ($this->isRenewFailCooling($uid)) {
+                $skipped++;
+                echo "CheckTvUserTool: renew skipped (fail cooldown), uid={$uid}, uname={$row['uname']}\n";
+                continue;
+            }
             $newData = array(
                 'edit'     => $row['uid'],
                 'username' => $row['uname'],
@@ -230,12 +242,83 @@ class CheckTvUserTool
             $res = $obj->xfUser($newData);
             if (true === $res) {
                 $success++;
+                $this->clearRenewFail($uid);
+            } else {
+                $failed++;
+                $this->markRenewFail($uid, $row['uname']);
+                $failNotify[] = "{$row['uname']}({$uid})";
+                echo "CheckTvUserTool: renew failed, uid={$uid}, uname={$row['uname']}, cooldown " . self::RENEW_FAIL_COOLDOWN_SECONDS . "s\n";
             }
         }
         if ($success > 0) {
             $getTvUserTool = new GetTvUserTool();
             $getTvUserTool->handle([]);
         }
+        if (!empty($failNotify)) {
+            $names = implode(', ', array_slice($failNotify, 0, 20));
+            $extra = count($failNotify) > 20 ? (' 等' . count($failNotify) . '个') : '';
+            $message = "续费失败已进入" . (self::RENEW_FAIL_COOLDOWN_SECONDS / 3600) . "小时冷却，避免重复扣费: {$names}{$extra}";
+            Queue::push('monitor', ['title' => 'player续费失败告警', 'message' => $message]);
+        }
+        if ($skipped > 0 || $failed > 0) {
+            echo "CheckTvUserTool: renew done success={$success}, failed={$failed}, skipped_cooldown={$skipped}\n";
+        }
         return $success;
+    }
+
+    private function getRenewFailFile()
+    {
+        return ROOT . '/runtime/locks/tv_renew_fail.json';
+    }
+
+    private function loadRenewFailMap()
+    {
+        $file = $this->getRenewFailFile();
+        if (!file_exists($file)) {
+            return [];
+        }
+        $data = json_decode((string)file_get_contents($file), true);
+        return is_array($data) ? $data : [];
+    }
+
+    private function saveRenewFailMap(array $map)
+    {
+        $file = $this->getRenewFailFile();
+        $dir = dirname($file);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+        file_put_contents($file, json_encode($map, JSON_UNESCAPED_UNICODE));
+    }
+
+    private function isRenewFailCooling($uid)
+    {
+        $map = $this->loadRenewFailMap();
+        if (empty($map[$uid]['ts'])) {
+            return false;
+        }
+        return (time() - (int)$map[$uid]['ts']) < self::RENEW_FAIL_COOLDOWN_SECONDS;
+    }
+
+    private function markRenewFail($uid, $uname)
+    {
+        $map = $this->loadRenewFailMap();
+        $prev = isset($map[$uid]['fail_count']) ? (int)$map[$uid]['fail_count'] : 0;
+        $map[$uid] = [
+            'ts'         => time(),
+            'uname'      => $uname,
+            'fail_count' => $prev + 1,
+        ];
+        $this->saveRenewFailMap($map);
+    }
+
+    private function clearRenewFail($uid)
+    {
+        $map = $this->loadRenewFailMap();
+        if (!isset($map[$uid])) {
+            return;
+        }
+        unset($map[$uid]);
+        $this->saveRenewFailMap($map);
     }
 }
