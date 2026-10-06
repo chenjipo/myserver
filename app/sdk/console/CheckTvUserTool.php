@@ -18,6 +18,12 @@ class CheckTvUserTool
     /** 续费失败后冷却，避免同一账号被 cron 反复续费扣款 */
     private const RENEW_FAIL_COOLDOWN_SECONDS = 86400;
 
+    /** 续费成功后冷却：防本地同步失败导致重复扣款（略短于月套餐） */
+    private const RENEW_SUCCESS_COOLDOWN_SECONDS = 1728000; // 20 天
+
+    /** 与后台续费套餐一致：每次延长 1 个月 */
+    private const RENEW_EXTEND_MODIFY = '+1 month';
+
     public function handle($params)
     { 
         $is_get_data = false;
@@ -223,12 +229,18 @@ class CheckTvUserTool
             return 0;
         }
         $obj = new TvTool();
+        $xuser = new Xuser();
         $success = 0;
         $failed = 0;
         $skipped = 0;
         $failNotify = [];
         foreach ($list as $row) {
             $uid = (string)$row['uid'];
+            if ($this->isRenewSuccessCooling($uid)) {
+                $skipped++;
+                echo "CheckTvUserTool: renew skipped (success cooldown), uid={$uid}, uname={$row['uname']}\n";
+                continue;
+            }
             if ($this->isRenewFailCooling($uid)) {
                 $skipped++;
                 echo "CheckTvUserTool: renew skipped (fail cooldown), uid={$uid}, uname={$row['uname']}\n";
@@ -243,6 +255,11 @@ class CheckTvUserTool
             if (true === $res) {
                 $success++;
                 $this->clearRenewFail($uid);
+                $oldExpired = (int)$row['yexpired'];
+                $newExpired = $this->buildExtendedExpired($oldExpired);
+                $xuser->updateUinfo($row['uid'], ['yexpired' => $newExpired]);
+                $this->markRenewSuccess($uid, $row['uname'], $newExpired);
+                echo "CheckTvUserTool: renew ok, uid={$uid}, uname={$row['uname']}, yexpired {$oldExpired} -> {$newExpired}\n";
             } else {
                 $failed++;
                 $this->markRenewFail($uid, $row['uname']);
@@ -251,6 +268,7 @@ class CheckTvUserTool
             }
         }
         if ($success > 0) {
+            // 全量同步仅兜底；成功账号已本地延长 yexpired，且同步侧会跳过无效解析
             $getTvUserTool = new GetTvUserTool();
             $getTvUserTool->handle([]);
         }
@@ -260,10 +278,16 @@ class CheckTvUserTool
             $message = "续费失败已进入" . (self::RENEW_FAIL_COOLDOWN_SECONDS / 3600) . "小时冷却，避免重复扣费: {$names}{$extra}";
             Queue::push('monitor', ['title' => 'player续费失败告警', 'message' => $message]);
         }
-        if ($skipped > 0 || $failed > 0) {
+        if ($skipped > 0 || $failed > 0 || $success > 0) {
             echo "CheckTvUserTool: renew done success={$success}, failed={$failed}, skipped_cooldown={$skipped}\n";
         }
         return $success;
+    }
+
+    private function buildExtendedExpired($oldExpired)
+    {
+        $base = max((int)$oldExpired, time());
+        return (int)strtotime(self::RENEW_EXTEND_MODIFY, $base);
     }
 
     private function getRenewFailFile()
@@ -271,9 +295,13 @@ class CheckTvUserTool
         return ROOT . '/runtime/locks/tv_renew_fail.json';
     }
 
-    private function loadRenewFailMap()
+    private function getRenewSuccessFile()
     {
-        $file = $this->getRenewFailFile();
+        return ROOT . '/runtime/locks/tv_renew_success.json';
+    }
+
+    private function loadJsonMap($file)
+    {
         if (!file_exists($file)) {
             return [];
         }
@@ -281,9 +309,8 @@ class CheckTvUserTool
         return is_array($data) ? $data : [];
     }
 
-    private function saveRenewFailMap(array $map)
+    private function saveJsonMap($file, array $map)
     {
-        $file = $this->getRenewFailFile();
         $dir = dirname($file);
         if (!is_dir($dir)) {
             mkdir($dir, 0777, true);
@@ -293,32 +320,55 @@ class CheckTvUserTool
 
     private function isRenewFailCooling($uid)
     {
-        $map = $this->loadRenewFailMap();
+        $map = $this->loadJsonMap($this->getRenewFailFile());
         if (empty($map[$uid]['ts'])) {
             return false;
         }
         return (time() - (int)$map[$uid]['ts']) < self::RENEW_FAIL_COOLDOWN_SECONDS;
     }
 
+    private function isRenewSuccessCooling($uid)
+    {
+        $map = $this->loadJsonMap($this->getRenewSuccessFile());
+        if (empty($map[$uid]['ts'])) {
+            return false;
+        }
+        return (time() - (int)$map[$uid]['ts']) < self::RENEW_SUCCESS_COOLDOWN_SECONDS;
+    }
+
     private function markRenewFail($uid, $uname)
     {
-        $map = $this->loadRenewFailMap();
+        $file = $this->getRenewFailFile();
+        $map = $this->loadJsonMap($file);
         $prev = isset($map[$uid]['fail_count']) ? (int)$map[$uid]['fail_count'] : 0;
         $map[$uid] = [
             'ts'         => time(),
             'uname'      => $uname,
             'fail_count' => $prev + 1,
         ];
-        $this->saveRenewFailMap($map);
+        $this->saveJsonMap($file, $map);
+    }
+
+    private function markRenewSuccess($uid, $uname, $newExpired)
+    {
+        $file = $this->getRenewSuccessFile();
+        $map = $this->loadJsonMap($file);
+        $map[$uid] = [
+            'ts'       => time(),
+            'uname'    => $uname,
+            'yexpired' => (int)$newExpired,
+        ];
+        $this->saveJsonMap($file, $map);
     }
 
     private function clearRenewFail($uid)
     {
-        $map = $this->loadRenewFailMap();
+        $file = $this->getRenewFailFile();
+        $map = $this->loadJsonMap($file);
         if (!isset($map[$uid])) {
             return;
         }
         unset($map[$uid]);
-        $this->saveRenewFailMap($map);
+        $this->saveJsonMap($file, $map);
     }
 }

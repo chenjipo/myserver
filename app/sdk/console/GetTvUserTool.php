@@ -23,84 +23,83 @@ class GetTvUserTool
         $killUser = [];
         $xuser = new Xuser();
         $model = ModelFactory::getInstance('sdk');
-        for ($i=1; $i < 3; $i++) { 
-            var_dump($i);
-            $arr = $aa->getUserList($i);
-            if (!empty($arr)) {
-                $success = 0;
-                $xxNum = $xxNum1 = 0;
-                foreach ($arr as $userinfo) {
-                    $uinfo = $xuser->getUserInfo($userinfo['uid']);
-                    if (!empty($uinfo)) {
-                        $upData = array(
-                            'upwd'       => $userinfo['upwd'],
-                            // 'is_online'  => $uinfo['is_push'] == 1 ? $userinfo['is_online'] : 0,
-                            'is_online'  => $userinfo['is_online'],
-                            'ystatus'    => $userinfo['ystatus'],
-                            'parentname' => $userinfo['parentname'],
-                            'yexpired'   => strtotime($userinfo['yexpired']),
-                            'lastonline' => $userinfo['is_online'] == 1 ? $time : strtotime($userinfo['lastonline']),
-                            // 'is_push'    => $userinfo['is_online'] == 1 ? 1 : 0,
-                        );
-
-                        $userinfo['ystatus'] == 1 && $upData['status'] = 1;
-
-                        ###判断是否下线
-                        if ($uinfo['is_online'] == 1 && $userinfo['is_online'] != 1) {
-                            $xxNum1++;
-                            // ###下线了，踢掉用户
-                            // $killUser[$uinfo['id']] = 1;
-                            // clear_user($uinfo['id'], $model);
-                        }
-
-                        // if ($userinfo['is_online'] == 1) {
-                        //    $xxNum++;
-                        //    $upData['is_clear'] = 0; ###不能干掉
-                        //    $upData['is_push']  = 1;
-                        // }
-                        $xuser->updateUinfo($userinfo['uid'], $upData);
-
-                    } else {
-                        $data = array(
-                            'uid'        => $userinfo['uid'],
-                            'uname'      => $userinfo['uname'],
-                            'upwd'       => $userinfo['upwd'],
-                            'parentname' => $userinfo['parentname'],
-                            'ystatus'    => $userinfo['ystatus'],
-                            'status'     => $userinfo['ystatus'],
-                            'is_push'    => 0,
-                            'is_online'  => $userinfo['is_online'],
-                            'is_clear'   => 0,
-                            'yexpired'   => strtotime($userinfo['yexpired']),
-                            'lastonline' => $userinfo['is_online'] == 1 ? $time : strtotime($userinfo['lastonline']),
-                            'ymd'        => date('Ymd'),
-                            'atime'      => time(),
-                        );
-                        $insetUid = $xuser->reg($data);
-                        if (!empty($insetUid)) {
-                            $success++;
-                        }
+        $result = $aa->getAllUserList(1000);
+        $arr = isset($result['list']) ? $result['list'] : [];
+        $recordsTotal = isset($result['recordsTotal']) ? (int)$result['recordsTotal'] : 0;
+        $pages = isset($result['pages']) ? (int)$result['pages'] : 0;
+        echo "GetTvUserTool: recordsTotal={$recordsTotal}, pages={$pages}, fetched=" . count($arr) . "\n";
+        if (!empty($arr)) {
+            $success = 0;
+            $xxNum = $xxNum1 = 0;
+            foreach ($arr as $userinfo) {
+                $uinfo = $xuser->getUserInfo($userinfo['uid']);
+                if (!empty($uinfo)) {
+                    $upData = array(
+                        'upwd'       => $userinfo['upwd'],
+                        'is_online'  => $userinfo['is_online'],
+                        'ystatus'    => $userinfo['ystatus'],
+                        'parentname' => $userinfo['parentname'],
+                    );
+                    // 到期日解析失败时不覆盖，避免把续费后本地已延长的 yexpired 写坏
+                    $expTs = strtotime($userinfo['yexpired']);
+                    if ($expTs !== false && $expTs > 0) {
+                        $upData['yexpired'] = $expTs;
                     }
-                 }
+                    $lastOnlineTs = strtotime($userinfo['lastonline']);
+                    if ($userinfo['is_online'] == 1) {
+                        $upData['lastonline'] = $time;
+                    } elseif ($lastOnlineTs !== false && $lastOnlineTs > 0) {
+                        $upData['lastonline'] = $lastOnlineTs;
+                    }
 
-                 if ($success > 0) {
-                    $message = "程序已新增{$success}个账号到用户池";
-                    $monitorArr = ['title' => 'player业务通知', 'message' => $message];
-                    Queue::push('monitor', $monitorArr); 
+                    $userinfo['ystatus'] == 1 && $upData['status'] = 1;
+
+                    ###判断是否下线
+                    if ($uinfo['is_online'] == 1 && $userinfo['is_online'] != 1) {
+                        $xxNum1++;
+                    }
+                    $xuser->updateUinfo($userinfo['uid'], $upData);
+
+                } else {
+                    $expTs = strtotime($userinfo['yexpired']);
+                    if ($expTs === false || $expTs <= 0) {
+                        $expTs = time();
+                    }
+                    $lastOnlineTs = strtotime($userinfo['lastonline']);
+                    if ($userinfo['is_online'] == 1) {
+                        $lastOnlineTs = $time;
+                    } elseif ($lastOnlineTs === false || $lastOnlineTs <= 0) {
+                        $lastOnlineTs = 0;
+                    }
+                    $data = array(
+                        'uid'        => $userinfo['uid'],
+                        'uname'      => $userinfo['uname'],
+                        'upwd'       => $userinfo['upwd'],
+                        'parentname' => $userinfo['parentname'],
+                        'ystatus'    => $userinfo['ystatus'],
+                        'status'     => $userinfo['ystatus'],
+                        'is_push'    => 0,
+                        'is_online'  => $userinfo['is_online'],
+                        'is_clear'   => 0,
+                        'yexpired'   => $expTs,
+                        'lastonline' => $lastOnlineTs,
+                        'ymd'        => date('Ymd'),
+                        'atime'      => time(),
+                    );
+                    $insetUid = $xuser->reg($data);
+                    if (!empty($insetUid)) {
+                        $success++;
+                    }
                 }
-
-                // if (!empty($killUser)) {
-                //     $killUserNum = count($killUser);
-                //     $message = "程序监测到{$killUserNum}个账号已下线,已自动回收账号";
-                //     $monitorArr = ['title' => 'player业务通知', 'message' => $message];
-                //     Queue::push('monitor', $monitorArr); 
-                // }
-                var_dump($xxNum, $xxNum1);
             }
+
+            if ($success > 0) {
+                $message = "程序已新增{$success}个账号到用户池";
+                $monitorArr = ['title' => 'player业务通知', 'message' => $message];
+                Queue::push('monitor', $monitorArr);
+            }
+            var_dump($xxNum, $xxNum1);
         }
-        
-       
-        
     }
 }
 

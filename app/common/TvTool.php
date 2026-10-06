@@ -52,10 +52,13 @@ Class TvTool
         );
     }
 
-    public function getUserList($page = 1)
+    /**
+     * 按页拉取账号列表（单页）
+     * @return array|false ['list'=>[], 'recordsTotal'=>int]
+     */
+    public function fetchUserListPage($page = 1, $pageSize = 1000)
     {
         $cookieId = $this->getCooike();
-        //模拟请求
         $headers = array(
              'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
              'Accept-Encoding: gzip, deflate, br, zstd',
@@ -67,72 +70,109 @@ Class TvTool
              'Referer:http://kytv.xyz/HckqYJZU/lines?order=0&dir=desc&entries=500',
              'X-Requested-With: XMLHttpRequest'
         );
-        // $page = 1;
-        // $start = 1;
-        $rows = 1000;
-
+        $rows = max(1, (int)$pageSize);
+        $page = max(1, (int)$page);
         $start = ($page - 1) * $rows;
         $demoStr = "columns%5B0%5D%5Bdata%5D=0&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=true&columns%5B0%5D%5Borderable%5D=true&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=1&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=true&columns%5B1%5D%5Borderable%5D=true&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=2&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=true&columns%5B2%5D%5Borderable%5D=true&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=3&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=true&columns%5B3%5D%5Borderable%5D=true&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=4&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=true&columns%5B4%5D%5Borderable%5D=true&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B5%5D%5Bdata%5D=5&columns%5B5%5D%5Bname%5D=&columns%5B5%5D%5Bsearchable%5D=true&columns%5B5%5D%5Borderable%5D=false&columns%5B5%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B5%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B6%5D%5Bdata%5D=6&columns%5B6%5D%5Bname%5D=&columns%5B6%5D%5Bsearchable%5D=true&columns%5B6%5D%5Borderable%5D=true&columns%5B6%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B6%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B7%5D%5Bdata%5D=7&columns%5B7%5D%5Bname%5D=&columns%5B7%5D%5Bsearchable%5D=true&columns%5B7%5D%5Borderable%5D=false&columns%5B7%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B7%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B8%5D%5Bdata%5D=8&columns%5B8%5D%5Bname%5D=&columns%5B8%5D%5Bsearchable%5D=true&columns%5B8%5D%5Borderable%5D=true&columns%5B8%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B8%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B9%5D%5Bdata%5D=9&columns%5B9%5D%5Bname%5D=&columns%5B9%5D%5Bsearchable%5D=true&columns%5B9%5D%5Borderable%5D=true&columns%5B9%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B9%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B10%5D%5Bdata%5D=10&columns%5B10%5D%5Bname%5D=&columns%5B10%5D%5Bsearchable%5D=true&columns%5B10%5D%5Borderable%5D=true&columns%5B10%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B10%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B11%5D%5Bdata%5D=11&columns%5B11%5D%5Bname%5D=&columns%5B11%5D%5Bsearchable%5D=true&columns%5B11%5D%5Borderable%5D=false&columns%5B11%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B11%5D%5Bsearch%5D%5Bregex%5D=false&order%5B0%5D%5Bcolumn%5D=0&order%5B0%5D%5Bdir%5D=desc&search%5Bvalue%5D=&search%5Bregex%5D=false&id=lines&filter=1&reseller=";
         parse_str($demoStr, $demoArr);
 
-        $notNext = true;
+        $microtime = microtime(true);
+        $param = $demoArr;
+        $milliseconds = round($microtime * 1000);
+        $param['draw'] = $page;
+        $param['start'] = $start;
+        $param['length'] = $rows;
+        $param['_'] = $milliseconds;
+
+        $res = $this->sendRequestByGet($this->getUrl('userList'), $param, $headers);
+        if ($res['response_code'] !== 200) {
+            return false;
+        }
+        $responseData = json_decode($res['output'], true);
+        if (!is_array($responseData)) {
+            return false;
+        }
         $insArr = [];
-        //循环操作
-        while (true) {
-            $nowNum = $page * $rows;
-            $microtime = microtime(true);
-            $param = $demoArr;
-            $milliseconds = round($microtime * 1000);
-            $param['draw'] = $page;
-            $param['start'] = $start;
-            $param['length'] = $rows;
-            $param['_'] = $milliseconds;
-            ###请求接口
-            $res = $this->sendRequestByGet($this->getUrl('userList'), $param, $headers);
-            if ($res['response_code'] === 200) {
-                $responseData = json_decode($res['output'], true);
-                // var_dump($nowNum, $responseData['recordsTotal']);
-                // if ($nowNum >= $responseData['recordsTotal']) {
-                //     $notNext = true;
-                // }
-                if (!empty($responseData['data'])) {
-                    foreach ($responseData['data'] as $uinfo) {
-                        $insData = [];
-                        preg_match("/>(.*?)<\/a>/", $uinfo[0], $xxx);
-                        $insData['uid'] = $xxx[1];
-                        preg_match("/>(.*?)<\/a>/", $uinfo[1], $xxx);
-                        $insData['uname'] = $xxx[1];
-                        $insData['upwd'] = $uinfo[2];
-                        preg_match("/>(.*?)<\/a>/", $uinfo[3], $xxx);
-                        $insData['parentname'] = $xxx[1];
-                        $insData['ystatus'] = 0;
-                        preg_match("/title=\"(.*?)\"/", $uinfo[4], $xxx);
-                        if (!empty($xxx[1]) && $xxx[1] == 'Active') {
-                            $insData['ystatus'] = 1;
-                        }
-                        preg_match("/(.*?)<br\/><small class='text-secondary'>(.*?)<\/small>/", $uinfo[9], $xxx);
-                        $insData['yexpired'] = $xxx[1] . ' ' . $xxx[2];
-
-                        preg_match("/(.*?)<br\/><small class='text-secondary'>(.*?)<\/small>/", $uinfo[10], $xxx);
-                        $insData['lastonline'] = $xxx[1] . ' ' . $xxx[2];
-
-                        $insData['is_online'] = 0;
-                        $pattern = '/\btext-success\b/';
-                        if (preg_match($pattern, $uinfo[5], $matches)) {
-                            $insData['is_online'] = 1;
-                        }
-                        $insArr[] = $insData;
-                    }
+        if (!empty($responseData['data'])) {
+            foreach ($responseData['data'] as $uinfo) {
+                $insData = [];
+                preg_match("/>(.*?)<\/a>/", $uinfo[0], $xxx);
+                $insData['uid'] = isset($xxx[1]) ? $xxx[1] : '';
+                preg_match("/>(.*?)<\/a>/", $uinfo[1], $xxx);
+                $insData['uname'] = isset($xxx[1]) ? $xxx[1] : '';
+                $insData['upwd'] = $uinfo[2];
+                preg_match("/>(.*?)<\/a>/", $uinfo[3], $xxx);
+                $insData['parentname'] = isset($xxx[1]) ? $xxx[1] : '';
+                $insData['ystatus'] = 0;
+                preg_match("/title=\"(.*?)\"/", $uinfo[4], $xxx);
+                if (!empty($xxx[1]) && $xxx[1] == 'Active') {
+                    $insData['ystatus'] = 1;
                 }
-            } else {
-                $notNext = true;
-            }
-
-            if ($notNext === true) {
-                break;
+                $insData['yexpired'] = '';
+                if (preg_match("/(.*?)<br\\/?><small class=['\"]text-secondary['\"]>(.*?)<\\/small>/i", $uinfo[9], $xxx)) {
+                    $insData['yexpired'] = trim($xxx[1] . ' ' . $xxx[2]);
+                }
+                $insData['lastonline'] = '';
+                if (preg_match("/(.*?)<br\\/?><small class=['\"]text-secondary['\"]>(.*?)<\\/small>/i", $uinfo[10], $xxx)) {
+                    $insData['lastonline'] = trim($xxx[1] . ' ' . $xxx[2]);
+                }
+                $insData['is_online'] = 0;
+                if (preg_match('/\btext-success\b/', $uinfo[5])) {
+                    $insData['is_online'] = 1;
+                }
+                $insArr[] = $insData;
             }
         }
-        return $insArr;
+        return [
+            'list' => $insArr,
+            'recordsTotal' => isset($responseData['recordsTotal']) ? (int)$responseData['recordsTotal'] : count($insArr),
+        ];
+    }
+
+    /**
+     * 按 recordsTotal 自动翻页拉全量账号
+     */
+    public function getAllUserList($pageSize = 1000)
+    {
+        $pageSize = max(1, (int)$pageSize);
+        $maxPages = 100;
+        $all = [];
+        $page = 1;
+        $recordsTotal = null;
+        while ($page <= $maxPages) {
+            $pageResult = $this->fetchUserListPage($page, $pageSize);
+            if ($pageResult === false) {
+                break;
+            }
+            if ($recordsTotal === null) {
+                $recordsTotal = (int)$pageResult['recordsTotal'];
+            }
+            if (!empty($pageResult['list'])) {
+                foreach ($pageResult['list'] as $row) {
+                    $all[] = $row;
+                }
+            } else {
+                break;
+            }
+            if ($page * $pageSize >= $recordsTotal) {
+                break;
+            }
+            $page++;
+        }
+        return [
+            'list' => $all,
+            'recordsTotal' => $recordsTotal === null ? count($all) : $recordsTotal,
+            'pages' => $page,
+        ];
+    }
+
+    public function getUserList($page = 1)
+    {
+        $pageResult = $this->fetchUserListPage($page, 1000);
+        if ($pageResult === false) {
+            return [];
+        }
+        return $pageResult['list'];
     }
 
     public function xfUser($newData)
